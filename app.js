@@ -4,7 +4,7 @@
      첫 모미는 가운데 칸(0,0), 다음부터는 이미 놓인 모미 둘레(대각선 포함) 빈칸 중
      가운데에 가깝고 옆에 붙은 모미가 적은 곳 (+ 글id로 만든 무작위) → 덩어리가 사방으로 자람
    - 판은 손가락으로 끌어서 둘러봄 (놓으면 조금 미끄러짐). 모미를 누르면 글
-   - 30초마다 새 글 확인. 내가 쓴 모미에는 체크 표시 (이 휴대폰에만 기억) */
+   - 30초마다 새 글 확인. 방금 쓴 모미에만 체크 모션이 한 번 나오고, 끝나면 체크도 사라짐 */
 const API = '/api/bucket';
 const SHAPES = ['square', 'circle', 'triangle'];          // 고르기 칸 순서 (피그마: 네모 · 동그라미 · 세모)
 const PALETTE = [5, 2, 3, 4, 0, 1];                         // 색 점 순서 (연두·주황·분홍·초록·보라·하늘) → 저장 번호 --c0~--c5
@@ -36,8 +36,6 @@ const ICON_SVG = {
   circle: '<svg viewBox="0 0 25 25"><circle cx="12.5" cy="12.5" r="12.5"/></svg>',
   triangle: `<svg viewBox="0 0 27 27"><path d="${TRI_ICON}"/></svg>`,
 };
-// 내 모미 체크 표시 (피그마 Group 34673)
-const CHECK = '<svg class="check" viewBox="0 0 25 25" aria-hidden="true"><circle cx="13" cy="13" r="8" fill="#fff"/><path fill-rule="evenodd" clip-rule="evenodd" d="M12.5 0C5.59659 0 0 5.59659 0 12.5C0 19.4034 5.59659 25 12.5 25C19.4034 25 25 19.4034 25 12.5C25 5.59659 19.4034 0 12.5 0ZM17.9182 10.3864C18.018 10.2723 18.0939 10.1395 18.1416 9.99565C18.1892 9.85182 18.2077 9.6999 18.1958 9.54885C18.1839 9.39779 18.1419 9.25064 18.0722 9.11605C18.0026 8.98147 17.9068 8.86216 17.7904 8.76516C17.674 8.66816 17.5394 8.59541 17.3944 8.55121C17.2495 8.507 17.0972 8.49223 16.9465 8.50776C16.7957 8.52329 16.6496 8.5688 16.5168 8.64163C16.3839 8.71445 16.2669 8.81312 16.1727 8.93182L11.2864 14.7943L8.75795 12.2648C8.54363 12.0578 8.25659 11.9432 7.95864 11.9458C7.66068 11.9484 7.37567 12.0679 7.16498 12.2786C6.95429 12.4893 6.83478 12.7743 6.83219 13.0723C6.8296 13.3702 6.94414 13.6573 7.15114 13.8716L10.5602 17.2807C10.6719 17.3923 10.8056 17.4794 10.9527 17.5364C11.0999 17.5935 11.2574 17.6193 11.4151 17.6121C11.5728 17.6049 11.7272 17.565 11.8686 17.4948C12.0101 17.4247 12.1353 17.3258 12.2364 17.2045L17.9182 10.3864Z" fill="#333"/></svg>';
 
 // 방금 쓴 모미에 그려지는 체크 (원 테두리 → 검정 채움 → 체크 한 획 → 톡 + 짧은 선 10개·물결)
 const RAYS = Array.from({ length: 10 }, (_, i) => {
@@ -139,7 +137,7 @@ function render() {
     b.style.top = `calc(var(--u) * ${p.r * 71})`;
     b.setAttribute('aria-label', `${SHAPE_NAMES[p.it.shape]} 모미: ${p.it.text}`);
     b.innerHTML = `<svg viewBox="0 0 68 68" aria-hidden="true"><g fill="${col(p.it.color)}">${CELL_SVG[p.it.shape]}</g></svg>`
-      + (p.it.id === justPosted ? DONE : mine.includes(p.it.id) ? CHECK : '');
+      + (p.it.id === justPosted ? DONE : '');   // 체크는 방금 쓴 모미에만, 모션이 끝날 때까지
     if (drawn && !seen.has(p.it.id)) b.classList.add('pop');
     return b;
   }));
@@ -319,7 +317,11 @@ function celebrate(id) {
       setTimeout(() => {
         toast.hidden = true;
         posted = false;
-        justPosted = null;   // 다음에 다시 그릴 땐 보통 체크 표시로
+        justPosted = null;
+        // 알림과 함께 체크도 사라짐 → 판에는 모미만 남음
+        const done = world.querySelector(`[data-id="${id}"] .done`);
+        done?.classList.add('gone');
+        setTimeout(() => done?.remove(), 400);
         if (sheet.classList.contains('down')) $('open').classList.remove('away');
       }, 350);
     }, 2200);

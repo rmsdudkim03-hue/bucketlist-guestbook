@@ -61,7 +61,6 @@ button, input, textarea { font: inherit; color: inherit; }
   -webkit-tap-highlight-color: transparent;
 }
 .momi svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.momi .check { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 25); height: calc(var(--u) * 25); transform: translate(-50%, -50%); }
 .momi.pop svg:first-child { animation: pop .6s cubic-bezier(.3, 1.6, .5, 1) both; }
 @keyframes pop { from { transform: scale(0); } }
 .momi:active svg:first-child { transform: scale(.92); }
@@ -281,6 +280,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .done .fillc { fill: var(--ink); transform: scale(0); transform-origin: 42px 42px; }
 .done .chk { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 50; stroke-dashoffset: 50; }
 .done .ck { transform-origin: 42px 44px; }
+.momi .done.gone { opacity: 0; transform: translate(-50%, -50%) scale(.6); transition: opacity .35s ease, transform .35s ease; }
 .done .ray { stroke: var(--ink); stroke-width: 4.5; stroke-linecap: round; stroke-dasharray: 14 40; stroke-dashoffset: 14; opacity: 0; }
 .done .ray:nth-of-type(even) { stroke: #e2e868; }   /* 짝수 선은 밑줄과 같은 연두 */
 .done .wave { fill: none; stroke: var(--ink); stroke-width: 2; opacity: 0; transform-origin: 42px 42px; }
