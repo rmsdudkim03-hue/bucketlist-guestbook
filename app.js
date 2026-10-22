@@ -1,22 +1,61 @@
-/* 버킷리스트 방명록 — 화면 동작
-   - 글 하나 = 격자 판 위의 도형 하나 (관람객이 고른 색 + 모양)
-   - 도형 자리는 글 순서와 글id로 정해져서 누가 열어도 같은 모양으로 보임
-     (첫 글은 위쪽 가운데, 다음 글부터는 이미 놓인 도형 옆(대각선 포함) 빈칸 중 위쪽에 가까운 곳에 조금 무작위로)
-   - 도형을 누르면 글이 보임. 30초마다 새 글 확인
-   - 내가 쓴 글은 이 휴대폰에 기억해 두고 천천히 숨쉬듯 움직임 */
+/* our momi MAP — 판·쓰기·보기 동작
+   - 글 하나 = 모미 하나 (관람객이 고른 모양 + 색). 판은 68px 칸 + 3px 틈 (피그마 'iPhone 17 - 9')
+   - 모미 자리는 글 순서와 글id로 정해져서 누가 열어도 같은 지도:
+     첫 모미는 가운데 칸(0,0), 다음부터는 이미 놓인 모미 둘레(대각선 포함) 빈칸 중
+     가운데에 가깝고 옆에 붙은 모미가 적은 곳 (+ 글id로 만든 무작위) → 덩어리가 사방으로 자람
+   - 판은 손가락으로 끌어서 둘러봄 (놓으면 조금 미끄러짐). 모미를 누르면 글
+   - 30초마다 새 글 확인. 내가 쓴 모미에는 체크 표시 (이 휴대폰에만 기억) */
 const API = '/api/bucket';
-const MAX = 80;
-const COLS = 8;                 // 격자 가로 칸 수
-const TOP = 1;                  // 판 위쪽 빈 줄 수
-const SHAPES = ['square', 'triangle', 'circle'];
+const SHAPES = ['square', 'circle', 'triangle'];          // 고르기 칸 순서 (피그마: 네모 · 동그라미 · 세모)
+const PALETTE = [5, 2, 3, 4, 0, 1];                         // 색 점 순서 (연두·주황·분홍·초록·보라·하늘) → 저장 번호 --c0~--c5
 const COLOR_NAMES = ['보라', '하늘', '주황', '분홍', '초록', '연두'];
+const SHAPE_NAMES = { square: '네모', circle: '동그라미', triangle: '세모' };
 const col = (i) => `var(--c${i})`;
 const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-const board = $('board'), shadowsEl = $('shadows'), piecesEl = $('pieces');
+/* ---------- 모양 (피그마에서 꺼낸 그대로) ---------- */
+const TRI = 'M55.8905 0.589681C57.1505 -0.670108 59.3046 0.222263 59.3046 2.004L59.3046 57.2966C59.3046 58.4012 58.4092 59.2966 57.3046 59.2966H2.00398C0.222096 59.2966 -0.670209 57.1422 0.589861 55.8823L55.8905 0.589681Z';
+const TRI_BIG = 'M126.881 0.294909C127.511 -0.335055 128.588 0.111107 128.588 1.00201L128.588 127.588C128.588 128.14 128.14 128.588 127.588 128.588H1.00211C0.111203 128.588 -0.334968 127.511 0.294997 126.881L126.881 0.294909Z';
+const TRI_ICON = 'M24.8808 0.294872C25.5107 -0.335093 26.5879 0.111077 26.5879 1.00198L26.5879 25.5878C26.5879 26.1401 26.1402 26.5878 25.5879 26.5878H1.0021C0.111198 26.5878 -0.334968 25.5106 0.294997 24.8807L24.8808 0.294872Z';
+// 판 위 한 칸(68): 네모 62(안쪽 3), 동그라미 68, 세모 ◢
+const CELL_SVG = {
+  square: '<rect x="3" y="3" width="62" height="62" rx="2"/>',
+  circle: '<circle cx="34" cy="34" r="34"/>',
+  triangle: `<path transform="translate(5.83 5.83)" d="${TRI}"/>`,
+};
+// 미리보기·보기 (151): 동그라미 151, 세모·네모 130
+const BIG_SVG = {
+  square: '<rect x="10.5" y="10.5" width="130" height="130" rx="4"/>',
+  circle: '<circle cx="75.5" cy="75.5" r="75.5"/>',
+  triangle: `<path transform="translate(4 3)" d="${TRI_BIG}"/>`,
+};
+// 고르기 칸 안의 작은 모양
+const ICON_SVG = {
+  square: '<svg viewBox="0 0 23 23"><rect width="23" height="23" rx="2"/></svg>',
+  circle: '<svg viewBox="0 0 25 25"><circle cx="12.5" cy="12.5" r="12.5"/></svg>',
+  triangle: `<svg viewBox="0 0 27 27"><path d="${TRI_ICON}"/></svg>`,
+};
+// 내 모미 체크 표시 (피그마 Group 34673)
+const CHECK = '<svg class="check" viewBox="0 0 25 25" aria-hidden="true"><circle cx="13" cy="13" r="8" fill="#fff"/><path fill-rule="evenodd" clip-rule="evenodd" d="M12.5 0C5.59659 0 0 5.59659 0 12.5C0 19.4034 5.59659 25 12.5 25C19.4034 25 25 19.4034 25 12.5C25 5.59659 19.4034 0 12.5 0ZM17.9182 10.3864C18.018 10.2723 18.0939 10.1395 18.1416 9.99565C18.1892 9.85182 18.2077 9.6999 18.1958 9.54885C18.1839 9.39779 18.1419 9.25064 18.0722 9.11605C18.0026 8.98147 17.9068 8.86216 17.7904 8.76516C17.674 8.66816 17.5394 8.59541 17.3944 8.55121C17.2495 8.507 17.0972 8.49223 16.9465 8.50776C16.7957 8.52329 16.6496 8.5688 16.5168 8.64163C16.3839 8.71445 16.2669 8.81312 16.1727 8.93182L11.2864 14.7943L8.75795 12.2648C8.54363 12.0578 8.25659 11.9432 7.95864 11.9458C7.66068 11.9484 7.37567 12.0679 7.16498 12.2786C6.95429 12.4893 6.83478 12.7743 6.83219 13.0723C6.8296 13.3702 6.94414 13.6573 7.15114 13.8716L10.5602 17.2807C10.6719 17.3923 10.8056 17.4794 10.9527 17.5364C11.0999 17.5935 11.2574 17.6193 11.4151 17.6121C11.5728 17.6049 11.7272 17.565 11.8686 17.4948C12.0101 17.4247 12.1353 17.3258 12.2364 17.2045L17.9182 10.3864Z" fill="#333"/></svg>';
+
+// 큰 모미 (모양 + 안에 글·날짜)
+function bigHTML(it) {
+  return `<svg viewBox="0 0 151 151" aria-hidden="true"><g fill="${col(it.color)}">${BIG_SVG[it.shape]}</g></svg>`
+    // 글을 쓰기 전(빈 미리보기)엔 글·날짜 없이 모양만 (피그마 'iPhone 17 - 12')
+    + (it.text ? `<p class="txt">${esc(it.text)}</p><p class="date">${esc(day(it.at))}</p>` : '');
+}
+function day(iso) {
+  const d = iso ? new Date(iso) : new Date();
+  if (Number.isNaN(d.getTime())) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
+}
+
+/* ---------- 데이터 ---------- */
 let items = [];                 // 오래된 글 → 최신 글
-const seen = new Set();         // 이미 그린 글 (새 글만 떨어지는 효과)
-let drawn = false;              // 처음 그릴 땐 떨어지는 효과 없이
+const seen = new Set();         // 이미 그린 글 (새 글만 톡 튀어나오게)
+let drawn = false;
 
 // 내가 쓴 글 id (이 휴대폰에만 저장. 못 쓰는 환경이면 그냥 넘어감)
 const MINE_KEY = 'bucket-mine';
@@ -41,179 +80,255 @@ function rng(str) {
 }
 
 function layout(list) {
+  const key = (c, r) => `${c},${r}`;
   const taken = new Set();
-  const key = (r, c) => r * COLS + c;
+  const cand = new Map();   // 비어 있고 옆에 모미가 있는 칸
   const out = [];
   for (const it of list) {
-    const rand = rng(it.id);
-    // 색·모양이 없는 예전 글은 글id로 정해 둠
+    // 예전 글(모양·색 없음)은 글id로 정해 둠
     if (!SHAPES.includes(it.shape)) it.shape = SHAPES[Math.floor(rng(it.id + 's')() * 3)];
     if (!(it.color >= 0 && it.color < 6)) it.color = Math.floor(rng(it.id + 'c')() * 6);
-    let best = null;
-    if (!taken.size) {
-      best = { r: 0, c: 3 + Math.floor(rand() * 2) };
-    } else {
-      // 이미 놓인 도형 둘레(대각선 포함)의 빈칸이 후보
-      const cand = new Map();
-      for (const k of taken) {
-        const r0 = Math.floor(k / COLS), c0 = k % COLS;
-        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-          const r = r0 + dr, c = c0 + dc;
-          if (r < 0 || c < 0 || c >= COLS || taken.has(key(r, c))) continue;
-          cand.set(key(r, c), { r, c });
-        }
-      }
-      // 점수가 낮은 곳에 놓음: 위쪽일수록, 가운데에 가까울수록, 옆에 붙은 도형이 적을수록(구멍이 듬성듬성 생기게) + 무작위
-      for (const p of [...cand.values()].sort((a, b) => key(a.r, a.c) - key(b.r, b.c))) {
+    const rand = rng(it.id);
+    let best = { c: 0, r: 0 };
+    if (taken.size) {
+      let bestScore = Infinity;
+      for (const p of [...cand.values()].sort((a, b) => a.c - b.c || a.r - b.r)) {
         let touch = 0;
-        for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) if (taken.has(key(p.r + dr, p.c + dc))) touch++;
-        const score = p.r * 0.45 + Math.abs(p.c - 3.5) * 0.6 + touch * 0.8 + rand() * 3;
-        if (!best || score < best.score) best = { ...p, score };
+        for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (taken.has(key(p.c + dc, p.r + dr))) touch++;
+        const score = Math.hypot(p.c, p.r * 1.15) + touch * 0.45 + rand() * 1.4;
+        if (score < bestScore) { bestScore = score; best = p; }
       }
     }
-    taken.add(key(best.r, best.c));
-    out.push({ it, r: best.r + TOP, c: best.c, turn: Math.floor(rng(it.id + 't')() * 4) });
+    taken.add(key(best.c, best.r));
+    cand.delete(key(best.c, best.r));
+    for (let dc = -1; dc <= 1; dc++) for (let dr = -1; dr <= 1; dr++) {
+      const c = best.c + dc, r = best.r + dr;
+      if (!taken.has(key(c, r))) cand.set(key(c, r), { c, r });
+    }
+    out.push({ it, c: best.c, r: best.r });
   }
   return out;
 }
 
-/* ---------- 그리기 ---------- */
-function pieceEl(p, tag) {
-  const el = document.createElement(tag);
-  el.className = `pc ${p.it.shape}` + (p.it.shape === 'triangle' ? ` t${p.turn}` : '');
-  el.style.left = `calc(var(--cell) * ${p.c})`;
-  el.style.top = `calc(var(--cell) * ${p.r})`;
-  el.style.setProperty('--col', col(p.it.color));
-  el.append(document.createElement('i'));
-  return el;
-}
+/* ---------- 판 그리기 ---------- */
+const map = $('map'), world = $('world');
+let placed = [];
+let bounds = { c0: 0, c1: 0, r0: 0, r1: 0 };
 
 function render() {
-  const placed = layout(items);
-  const rows = placed.reduce((m, p) => Math.max(m, p.r + 1), 0);
-  board.style.height = `calc(var(--cell) * ${Math.max(10, rows + 2)})`;
-  shadowsEl.replaceChildren(...placed.map((p) => pieceEl(p, 'div')));
-  piecesEl.replaceChildren(...placed.map((p) => {
-    const b = pieceEl(p, 'button');
-    b.setAttribute('aria-label', p.it.text);
-    if (mine.includes(p.it.id)) b.classList.add('mine');
-    if (drawn && !seen.has(p.it.id)) b.classList.add('drop');
-    b.onclick = () => showCard(p);
+  placed = layout(items);
+  bounds = placed.reduce((b, p) => ({
+    c0: Math.min(b.c0, p.c), c1: Math.max(b.c1, p.c), r0: Math.min(b.r0, p.r), r1: Math.max(b.r1, p.r),
+  }), { c0: 0, c1: 0, r0: 0, r1: 0 });
+  world.replaceChildren(...placed.map((p) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'momi';
     b.dataset.id = p.it.id;
+    b.style.left = `calc(var(--u) * ${p.c * 71})`;
+    b.style.top = `calc(var(--u) * ${p.r * 71})`;
+    b.setAttribute('aria-label', `${SHAPE_NAMES[p.it.shape]} 모미: ${p.it.text}`);
+    b.innerHTML = `<svg viewBox="0 0 68 68" aria-hidden="true"><g fill="${col(p.it.color)}">${CELL_SVG[p.it.shape]}</g></svg>`
+      + (mine.includes(p.it.id) ? CHECK : '');
+    if (drawn && !seen.has(p.it.id)) b.classList.add('pop');
     return b;
   }));
   placed.forEach((p) => seen.add(p.it.id));
   drawn = true;
-  $('count').textContent = items.length ? `${items.length}개의 버킷리스트 · 도형을 눌러 보세요` : '';
-  $('empty').hidden = items.length > 0;
+  $('count').textContent = `${items.length}명의 모미 보관중`;
+  clampPan();
+  place();
 }
 
-/* ---------- 글 보기 카드 ---------- */
-function when(iso) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${p(d.getHours())}:${p(d.getMinutes())}`;
+/* ---------- 끌어서 둘러보기 ---------- */
+// 칸(0,0) = 피그마 프레임의 (202, 427). 화면 높이가 달라도 세로 가운데 기준으로 맞춤
+let pan = { x: 0, y: 0 };
+function origin() {
+  const W = Math.min(innerWidth, 480), U = W / 402;
+  return { U, x: (innerWidth - W) / 2 + 202 * U, y: innerHeight / 2 + (427 - 437) * U };
 }
-function showCard(p) {
-  const s = $('cardShape');
-  s.className = `card-shape ${p.it.shape}` + (p.it.shape === 'triangle' ? ` t${p.turn}` : '');
-  s.style.setProperty('--col', col(p.it.color));
-  $('cardText').textContent = p.it.text; // 글자로만 넣음 (태그가 섞여 있어도 실행되지 않게)
-  $('cardMeta').textContent = [p.it.name, when(p.it.at)].filter(Boolean).join(' · ');
+function place() {
+  const o = origin();
+  const x = o.x + pan.x, y = o.y + pan.y;
+  world.style.transform = `translate(${x}px, ${y}px)`;
+  map.style.backgroundPosition = `${x}px ${y}px`;
+}
+// 화면 가운데가 모미 덩어리(+ 둘레 2칸) 밖으로 나가지 않게
+function clampPan() {
+  const o = origin(), s = 71 * o.U, m = 2 * s;
+  const cx = innerWidth / 2, cy = innerHeight / 2;
+  const minX = bounds.c0 * s - m, maxX = (bounds.c1 + 1) * s + m;
+  const minY = bounds.r0 * s - m, maxY = (bounds.r1 + 1) * s + m;
+  pan.x = Math.min(cx - o.x - minX, Math.max(cx - o.x - maxX, pan.x));
+  pan.y = Math.min(cy - o.y - minY, Math.max(cy - o.y - maxY, pan.y));
+}
+
+let drag = null, moved = false, coast = 0;
+map.addEventListener('pointerdown', (e) => {
+  cancelAnimationFrame(coast);
+  drag = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y, t: performance.now(), vx: 0, vy: 0 };
+  moved = false;
+});
+addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!moved && Math.hypot(dx, dy) < 6) return;   // 조금 움직인 건 '누르기'로 봄
+  moved = true;
+  map.classList.add('dragging');
+  const now = performance.now(), nx = drag.px + dx, ny = drag.py + dy;
+  const dt = Math.max(1, now - drag.t);
+  drag.vx = (nx - pan.x) / dt; drag.vy = (ny - pan.y) / dt; drag.t = now;
+  pan.x = nx; pan.y = ny;
+  clampPan();
+  place();
+});
+addEventListener('pointerup', () => {
+  if (!drag) return;
+  map.classList.remove('dragging');
+  // 놓으면 조금 더 미끄러지다 멈춤
+  let { vx, vy } = drag;
+  drag = null;
+  if (!moved) return;
+  let last = performance.now();
+  const step = (now) => {
+    const dt = now - last; last = now;
+    pan.x += vx * dt; pan.y += vy * dt;
+    vx *= 0.92; vy *= 0.92;
+    clampPan(); place();
+    if (Math.hypot(vx, vy) > 0.02) coast = requestAnimationFrame(step);
+  };
+  coast = requestAnimationFrame(step);
+});
+addEventListener('pointercancel', () => { drag = null; map.classList.remove('dragging'); });
+addEventListener('resize', () => { clampPan(); place(); });
+
+// 어떤 모미를 화면 가운데로 부드럽게 옮김
+function glideTo(id, after) {
+  const p = placed.find((q) => q.it.id === id);
+  if (!p) return;
+  const o = origin(), s = 71 * o.U;
+  const from = { ...pan };
+  const to = { x: innerWidth / 2 - o.x - (p.c * s + 34 * o.U), y: innerHeight * 0.53 - o.y - (p.r * s + 34 * o.U) };
+  const t0 = performance.now(), T = 700;
+  cancelAnimationFrame(coast);
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / T), e = 1 - (1 - k) ** 3;
+    pan.x = from.x + (to.x - from.x) * e;
+    pan.y = from.y + (to.y - from.y) * e;
+    place();
+    if (k < 1) coast = requestAnimationFrame(step); else after?.();
+  };
+  coast = requestAnimationFrame(step);
+}
+
+/* ---------- 모미 보기 ---------- */
+world.addEventListener('click', (e) => {
+  const b = e.target.closest('.momi');
+  if (!b || moved) return;
+  const it = items.find((x) => x.id === b.dataset.id);
+  if (!it) return;
+  $('cardWho').textContent = it.name || '익명';
+  const big = $('cardBig');
+  big.className = `big ${it.shape}`;
+  big.innerHTML = bigHTML(it);
   $('card').hidden = false;
-}
-$('card').onclick = () => { $('card').hidden = true; };
+});
+$('card').addEventListener('click', () => { $('card').hidden = true; });
 
 /* ---------- 불러오기 ---------- */
-async function load() {
-  const r = await fetch(API);
-  if (!r.ok) throw new Error(r.status);
-  return r.json();
-}
 async function refresh(first = false) {
   try {
-    const d = await load();
-    if (!d.enabled) { $('note').textContent = '지금은 글을 저장할 수 없어요. 잠시 후 다시 열어 주세요.'; return; }
+    const r = await fetch(API);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (!d.enabled) { $('note').textContent = '지금은 모미를 저장할 수 없어요.'; return; }
     // 방금 내가 쓴 글이 아직 목록에 안 나왔으면 (몇 초 늦을 수 있음) 그대로 둠
     const got = new Set(d.items.map((x) => x.id));
     const pending = items.filter((x) => !got.has(x.id) && mine.includes(x.id));
     items = [...d.items].reverse().concat(pending);
+    $('note').textContent = '';
     render();
   } catch {
-    if (first) $('note').textContent = '글을 불러오지 못했어요. 새로고침해 주세요.';
+    if (first) { $('note').textContent = '모미를 불러오지 못했어요. 새로고침해 주세요.'; render(); }
   }
   if (first) window.loaderReady?.(); // 로딩 화면 닫아도 됨
 }
-// 새 글 확인 (화면을 보고 있을 때만)
-setInterval(() => { if (!document.hidden && $('sheet').hidden) refresh(); }, 30_000);
+// 새 글 확인 (화면을 보고 있고, 쓰는 중이 아닐 때만)
+setInterval(() => { if (!document.hidden && sheet.classList.contains('down')) refresh(); }, 30_000);
 
-/* ---------- 쓰기 화면 ---------- */
-const form = $('write'), text = $('text'), name = $('name'), sendBtn = $('send'), msg = $('msg');
-let pick = { color: null, shape: null };
+/* ---------- 쓰기 시트 ---------- */
+const sheet = $('sheet'), text = $('text'), name = $('name'), sendBtn = $('send'), msg = $('msg');
+let pick = { shape: 'triangle', color: 5 };   // 피그마 첫 화면: 세모 + 연두
 
-// 색 6개, 모양 3개 버튼 만들기
-COLOR_NAMES.forEach((label, i) => {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.setAttribute('role', 'radio');
-  b.setAttribute('aria-checked', 'false');
-  b.setAttribute('aria-label', label);
-  b.style.setProperty('--col', col(i));
-  b.onclick = () => { pick.color = i; update(); };
-  $('colors').append(b);
-});
-const SHAPE_NAMES = { square: '네모', triangle: '세모', circle: '동그라미' };
 SHAPES.forEach((s) => {
   const b = document.createElement('button');
   b.type = 'button';
   b.className = s;
   b.setAttribute('role', 'radio');
-  b.setAttribute('aria-checked', 'false');
   b.setAttribute('aria-label', SHAPE_NAMES[s]);
-  b.append(document.createElement('i'));
+  b.innerHTML = ICON_SVG[s];
   b.onclick = () => { pick.shape = s; update(); };
   $('shapes').append(b);
 });
-
-function update() {
-  if (text.value.includes('\n')) text.value = text.value.replace(/\n+/g, ' '); // 한 줄짜리 글
-  $('len').textContent = `${text.value.length}/${MAX}`;
-  [...$('colors').children].forEach((b, i) => b.setAttribute('aria-checked', String(pick.color === i)));
-  [...$('shapes').children].forEach((b, i) => {
-    b.setAttribute('aria-checked', String(pick.shape === SHAPES[i]));
-    // 색을 먼저 고르면 모양들이 그 색으로 보임
-    if (pick.color !== null) b.style.setProperty('--col', col(pick.color)); else b.style.removeProperty('--col');
-  });
-  const ready = pick.color !== null && pick.shape && text.value.trim();
-  sendBtn.disabled = !ready;
-  sendBtn.textContent = pick.color === null || !pick.shape ? '색과 모양을 골라 주세요' : '남기기';
-}
-text.addEventListener('input', update);
-text.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); form.requestSubmit(); }
+PALETTE.forEach((i) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.setAttribute('role', 'radio');
+  b.setAttribute('aria-label', COLOR_NAMES[i]);
+  b.style.setProperty('--col', col(i));
+  b.onclick = () => { pick.color = i; update(); };
+  $('colors').append(b);
 });
 
-function say(t, bad = false) {
-  msg.textContent = t;
-  msg.classList.toggle('bad', bad);
+function update() {
+  sheet.style.setProperty('--pick', col(pick.color));
+  [...$('shapes').children].forEach((b, k) => b.setAttribute('aria-checked', String(SHAPES[k] === pick.shape)));
+  [...$('colors').children].forEach((b, k) => b.setAttribute('aria-checked', String(PALETTE[k] === pick.color)));
+  $('who').textContent = name.value.trim();
+  const pv = $('preview');
+  pv.innerHTML = `<div class="big ${pick.shape}">${bigHTML({ ...pick, text: text.value.trim(), at: null })}</div>`;
+  sendBtn.disabled = !text.value.trim();
 }
-$('open').onclick = () => { $('sheet').hidden = false; say(''); update(); };
-$('close').onclick = () => { $('sheet').hidden = true; };
+text.addEventListener('input', () => { msg.textContent = ''; update(); });
+name.addEventListener('input', update);
+text.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); name.focus(); }
+});
+
+let posted = false;
+function openSheet() {
+  $('card').hidden = true;
+  sheet.inert = false;
+  sheet.classList.remove('down');
+  $('sheetDim').hidden = false;
+  $('open').classList.add('away');
+  msg.textContent = '';
+  update();
+}
+function closeSheet() {
+  document.activeElement?.blur();
+  sheet.classList.add('down');
+  sheet.inert = true;
+  $('sheetDim').hidden = true;
+  if (!posted) $('open').classList.remove('away');
+}
+$('open').onclick = openSheet;
+$('close').onclick = closeSheet;
+$('sheetDim').onclick = closeSheet;
 
 const ERRORS = {
   bad_word: '고운 말로 다시 써 주세요 🙂',
   too_fast: '조금 뒤에 다시 남겨 주세요.',
-  empty: '버킷리스트를 적어 주세요.',
-  input: '색과 모양을 골라 주세요.',
-  no_store: '지금은 글을 저장할 수 없어요.',
+  empty: '하고 싶은 일을 적어 주세요.',
+  input: '모양과 색을 골라 주세요.',
+  no_store: '지금은 모미를 저장할 수 없어요.',
 };
 
-form.addEventListener('submit', async (e) => {
+sheet.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (sendBtn.disabled) return;
   sendBtn.disabled = true;
-  say('남기는 중…');
+  msg.textContent = '';
   try {
     const r = await fetch(API, {
       method: 'POST',
@@ -222,22 +337,20 @@ form.addEventListener('submit', async (e) => {
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {
-      say(ERRORS[d.error] || '남기지 못했어요. 다시 시도해 주세요.', true);
+      msg.textContent = ERRORS[d.error] || '남기지 못했어요. 다시 시도해 주세요.';
       sendBtn.disabled = false;
       return;
     }
+    // 피그마 'iPhone 17 - 11': 시트가 내려가고, 판 가운데로 내 모미가 와서 체크 표시
     rememberMine(d.item.id);
+    posted = true;
     items.push(d.item);
     text.value = '';
-    pick = { color: null, shape: null };
-    update();
-    $('sheet').hidden = true;
+    closeSheet();
     render();
-    // 내 도형이 있는 곳으로 내려가서 보여 줌
-    const el = piecesEl.querySelector(`[data-id="${d.item.id}"]`);
-    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    glideTo(d.item.id);
   } catch {
-    say('인터넷 연결을 확인해 주세요.', true);
+    msg.textContent = '인터넷 연결을 확인해 주세요.';
     sendBtn.disabled = false;
   }
 });

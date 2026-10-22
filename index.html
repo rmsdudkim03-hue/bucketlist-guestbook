@@ -3,12 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#c7c6c7">
-<title>BUCKET LIST</title>
-<meta name="description" content="전시 방명록 — 색과 모양을 골라 나의 버킷리스트 한 줄">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#ffffff">
+<title>our momi MAP</title>
+<meta name="description" content="전시 방명록 — 하고 싶은 일을 모양과 색으로, 나의 모미 남기기">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -29,53 +26,37 @@
   <button class="intro-btn" id="introGo" type="button">모미 남기기</button>
 </section>
 
-<main class="page">
-  <header class="head">
-    <h1>BUCKET LIST</h1>
-    <p class="count" id="count"></p>
-  </header>
-
-  <!-- 모두의 버킷리스트: 격자 판 위에 도형으로. 도형을 누르면 글이 보임 -->
-  <section class="board" id="board" aria-label="모두의 버킷리스트">
-    <div class="layer shadows" id="shadows"></div>
-    <div class="layer pieces" id="pieces"></div>
-  </section>
-  <p class="empty" id="empty" hidden>아직 남긴 글이 없어요.<br>첫 번째 도형을 놓아 주세요.</p>
-  <p class="note" id="note"></p>
-</main>
-
-<button class="cta" id="open">모미 남기기</button>
-
-<!-- 쓰기 화면: 색 6개 + 모양 3개 고르고 한 줄 쓰기 -->
-<section class="sheet" id="sheet" hidden aria-label="버킷리스트 쓰기">
-  <form class="write" id="write" autocomplete="off">
-    <button type="button" class="close" id="close" aria-label="닫기">×</button>
-    <h2>나의 버킷리스트</h2>
-    <p class="guide">색과 모양을 하나씩 골라 주세요.</p>
-
-    <div class="pick">
-      <div class="colors" id="colors" role="radiogroup" aria-label="색"></div>
-      <div class="shapes" id="shapes" role="radiogroup" aria-label="모양"></div>
-    </div>
-
-    <label class="sr" for="text">버킷리스트</label>
-    <textarea id="text" rows="2" maxlength="80" placeholder="살면서 꼭 해 보고 싶은 일 하나 (예: 오로라 보러 가기)"></textarea>
-    <div class="row">
-      <label class="sr" for="name">이름</label>
-      <input id="name" maxlength="12" placeholder="이름 (선택)">
-      <span class="len" id="len">0/80</span>
-    </div>
-    <button type="submit" class="send" id="send" disabled>남기기</button>
-    <p class="msg" id="msg" role="status" aria-live="polite"></p>
-  </form>
+<!-- 모두의 판 (피그마 'iPhone 17 - 9', '- 11'): 칸 위에 모미가 모여 있고, 손가락으로 끌어서 둘러봄. 모미를 누르면 글 -->
+<section class="map" id="map" aria-label="모두의 모미">
+  <div class="world" id="world"></div>
 </section>
+<img class="map-logo" src="assets/logo.svg" alt="our momi MAP">
+<p class="count" id="count"></p>
+<p class="note" id="note"></p>
+<button class="cta" id="open" type="button">모미 작성하기</button>
 
-<!-- 도형을 눌렀을 때 보이는 글 -->
+<!-- 모미 쓰기 시트 (피그마 'iPhone 17 - 12', '- 8'): 모양·색 고르고, 내용·이름 쓰기 -->
+<div class="sheet-dim" id="sheetDim" hidden></div>
+<form class="sheet down" id="sheet" autocomplete="off" aria-label="모미 쓰기" inert>
+  <span class="handle" aria-hidden="true"></span>
+  <button class="back" id="close" type="button" aria-label="닫기">←</button>
+  <div class="title"><span class="who" id="who"></span><img src="assets/s-momi.svg" alt="'s momi"></div>
+  <div class="preview" id="preview"></div>
+  <div class="shapes" id="shapes" role="radiogroup" aria-label="모양"></div>
+  <div class="colors" id="colors" role="radiogroup" aria-label="색"></div>
+  <label class="sr" for="text">하고 싶은 일</label>
+  <input class="field" id="text" maxlength="80" placeholder="내용을 입력해주세요." enterkeyhint="next">
+  <label class="sr" for="name">이름</label>
+  <input class="field" id="name" maxlength="12" placeholder="이름 (선택)" enterkeyhint="done">
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+  <button class="send" id="send" type="submit" disabled>모미 작성하기</button>
+</form>
+
+<!-- 판에서 모미를 눌렀을 때 -->
 <div class="card" id="card" hidden>
   <div class="card-box" role="dialog" aria-modal="true">
-    <span class="card-shape" id="cardShape"></span>
-    <p class="card-text" id="cardText"></p>
-    <small class="card-meta" id="cardMeta"></small>
+    <div class="title"><span class="who" id="cardWho"></span><img src="assets/s-momi.svg" alt="'s momi"></div>
+    <div class="big" id="cardBig"></div>
   </div>
 </div>
 

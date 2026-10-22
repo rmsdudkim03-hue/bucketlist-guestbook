@@ -1,7 +1,7 @@
-/* 버킷리스트 방명록 — 휴대폰 세로 화면 기준 (넓은 화면에선 가운데 480px)
-   격자 판: 가로 8칸. 한 칸 크기(--cell)는 화면 폭 ÷ 8 */
+/* 버킷리스트 방명록 (our momi MAP) — 휴대폰 세로 화면 기준 (넓은 화면에선 가운데 480px)
+   좌표는 피그마 402×874 프레임 px × --u (화면 폭 ÷ 402) */
 :root {
-  /* 도형 색 6개 (app.js의 COLORS와 같은 순서) */
+  /* 모미 색 6개 (app.js의 COLORS와 같은 순서 = 저장되는 color 번호) */
   --c0: #cdc5ff;  /* 보라 */
   --c1: #a9c3e6;  /* 하늘 */
   --c2: #e98868;  /* 주황 */
@@ -9,23 +9,22 @@
   --c4: #6dad93;  /* 초록 */
   --c5: #e2f268;  /* 연두 */
 
-  --board: #c7c6c7;     /* 판 바탕 */
-  --line: #8f8f8f;      /* 격자 선·점 */
-  --sheet: #898989;     /* 쓰기 화면 바탕 */
-  --blank: #d9d9d9;     /* 고르기 전 모양 색 */
-  --ink: #111;
-  --sub: #6b6b6b;
-  --bad: #c62828;
-  --font: 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
+  --ink: #333;          /* 피그마 BasicBlack */
+  --grey: #939393;      /* 피그마 maingrey */
+  --grey01: #b8b8b8;    /* 고르지 않은 모양 아이콘 */
+  --line: #dddcdd;      /* 입력칸 테두리·손잡이 */
+  --cell: #edeced;      /* 판 칸 */
+  --bad: #d9534f;
+  --sub: #6b6b6b;       /* 관리 화면 보조 글자 */
+  --font: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   --w: min(100vw, 480px);
-  --u: calc(var(--w) / 402);   /* 로딩 화면: 피그마 1px (프레임 폭 402) = 화면 몇 px */
-  --cell: calc(var(--w) / 8);
+  --u: calc(var(--w) / 402);   /* 피그마 1px (프레임 폭 402) = 화면 몇 px */
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 [hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
-  background: var(--board);
+  background: #fff;
   color: var(--ink);
   font: 16px/1.5 var(--font);
   word-break: keep-all;
@@ -34,222 +33,259 @@ body {
 button, input, textarea { font: inherit; color: inherit; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-.page {
-  width: var(--w);
-  margin: 0 auto;
-  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+/* ---------- 모두의 판 (피그마 'iPhone 17 - 9', '- 11') ----------
+   68px 칸 + 3px 흰 틈. 손가락으로 끌어서 둘러봄 (지도처럼). 칸 무늬는 app.js가 끄는 만큼 따라 움직임 */
+.map {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;           /* 끌 때 화면 전체가 스크롤되지 않게 */
+  cursor: grab;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='71' height='71'%3E%3Crect width='68' height='68' rx='3' fill='%23edeced'/%3E%3C/svg%3E");
+  background-size: calc(var(--u) * 71) calc(var(--u) * 71);
 }
+.map.dragging { cursor: grabbing; }
+.world { position: absolute; left: 0; top: 0; will-change: transform; }
+.world.glide { transition: transform .7s cubic-bezier(.3, .1, .2, 1); }
 
-/* 머리말 */
-.head { padding: calc(28px + env(safe-area-inset-top)) 20px 16px; }
-h1 { font-size: 28px; line-height: 1.1; font-weight: 700; letter-spacing: -.01em; }
-.count { margin-top: 4px; font-size: 14px; color: var(--sub); min-height: 1.5em; }
-
-/* 격자 판 (선 + 교차점의 점) */
-.board {
-  position: relative;
-  width: var(--w);
-  min-height: calc(var(--cell) * 10);
-  background:
-    radial-gradient(circle, var(--line) 2.4px, transparent 2.9px) calc(var(--cell) / -2) calc(var(--cell) / -2) / var(--cell) var(--cell),
-    linear-gradient(to right, var(--line) 1.4px, transparent 1.4px) -0.7px 0 / var(--cell) var(--cell),
-    linear-gradient(to bottom, var(--line) 1.4px, transparent 1.4px) 0 -0.7px / var(--cell) var(--cell);
-}
-.layer { position: absolute; inset: 0; }
-
-/* 도형 한 칸 */
-.pc {
+/* 모미 한 칸 (68×68). 모양은 피그마 그대로: 네모 62(안쪽 3), 동그라미 68, 세모 ◢ */
+.momi {
   position: absolute;
-  width: var(--cell);
-  height: var(--cell);
-  padding: calc(var(--cell) * .05);
+  width: calc(var(--u) * 68);
+  height: calc(var(--u) * 68);
+  padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.pc i {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: var(--col);
-  border-radius: 7%;
-  /* 살짝 도톰해 보이게: 가장자리 밝게, 아래쪽 조금 어둡게 */
-  box-shadow:
-    inset 0 0 calc(var(--cell) * .05) rgba(255, 255, 255, .55),
-    inset 0 calc(var(--cell) * -.05) calc(var(--cell) * .1) rgba(0, 0, 0, .07);
+.momi svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.momi .check { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 25); height: calc(var(--u) * 25); transform: translate(-50%, -50%); }
+.momi.pop svg:first-child { animation: pop .6s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes pop { from { transform: scale(0); } }
+.momi:active svg:first-child { transform: scale(.92); }
+
+/* 판 위에 떠 있는 로고·개수·버튼 (피그마 좌표) */
+.map-logo {
+  position: fixed;
+  left: calc(50% - var(--w) / 2 + var(--u) * 60);
+  top: calc(var(--u) * 81 + env(safe-area-inset-top));
+  width: calc(var(--u) * 70);
+  pointer-events: none;
 }
-.pc.circle i { border-radius: 50%; }
-.pc.triangle i { border-radius: 0; }
-/* 삼각형 방향 4가지 */
-.pc.t0 i { clip-path: polygon(100% 0, 100% 100%, 0 100%); }   /* ◢ */
-.pc.t1 i { clip-path: polygon(0 0, 100% 100%, 0 100%); }      /* ◣ */
-.pc.t2 i { clip-path: polygon(0 0, 100% 0, 0 100%); }         /* ◤ */
-.pc.t3 i { clip-path: polygon(0 0, 100% 0, 100% 100%); }      /* ◥ */
-
-/* 그림자: 왼쪽 위로 흐릿하게 (도형 아래 따로 한 겹) */
-.shadows .pc { pointer-events: none; transform: translate(calc(var(--cell) * -.2), calc(var(--cell) * -.16)); }
-.shadows .pc i { background: rgba(0, 0, 0, .085); box-shadow: none; filter: blur(1.5px); }
-
-/* 내가 남긴 도형: 천천히 숨쉬듯 */
-.pieces .pc.mine i { animation: breathe 2.4s ease-in-out infinite; }
-@keyframes breathe { 50% { transform: scale(.88); } }
-/* 새로 놓인 도형: 위에서 톡 떨어짐 */
-.pc.drop { animation: drop .7s cubic-bezier(.3, 1.5, .5, 1) both; }
-@keyframes drop { from { opacity: 0; transform: translateY(calc(var(--cell) * -.6)) scale(.6); } }
-.pieces .pc:active i { transform: scale(.92); }
-
-.empty { padding: 24px 20px 0; color: var(--sub); text-align: center; }
-.note { padding: 16px 20px 0; font-size: 13px; color: var(--sub); text-align: center; }
-
-/* 아래 고정 버튼 */
+.count {
+  position: fixed;
+  left: calc(50% - var(--w) / 2 + var(--u) * 62);
+  top: calc(var(--u) * 155 + env(safe-area-inset-top));
+  font: 700 calc(var(--u) * 12) / 1.2 var(--font);
+  color: var(--grey);
+  pointer-events: none;
+}
+.note {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  color: var(--grey);
+  text-align: center;
+  pointer-events: none;
+}
 .cta {
   position: fixed;
   left: 50%;
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  bottom: calc(var(--u) * 40 + env(safe-area-inset-bottom));
+  width: calc(var(--u) * 246);
+  height: calc(var(--u) * 56);
   transform: translateX(-50%);
-  width: calc(min(100vw, 480px) - 40px);
-  height: 56px;
   border: 0;
-  border-radius: 14px;
+  border-radius: calc(var(--u) * 88);
   background: var(--ink);
   color: #fff;
-  font-size: 17px;
-  font-weight: 700;
+  font: 700 calc(var(--u) * 16) / 1.2 var(--font);
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+  transition: opacity .3s, transform .3s;
 }
+.cta.away { opacity: 0; transform: translate(-50%, 20px); pointer-events: none; }
 
-/* 쓰기 화면 */
+/* ---------- 모미 쓰기 시트 (피그마 'iPhone 17 - 12', '- 8') ----------
+   아래에서 올라오는 흰 판 (위 모서리 둥글게 50). 안의 좌표 = 피그마 y - 291 */
+.sheet-dim { position: fixed; inset: 0; z-index: 9; }
 .sheet {
   position: fixed;
-  inset: 0;
-  background: var(--sheet);
-  overflow-y: auto;
+  left: 50%;
+  bottom: 0;
   z-index: 10;
-  animation: up .35s ease-out;
-}
-@keyframes up { from { transform: translateY(24px); opacity: 0; } }
-.write {
-  position: relative;
   width: var(--w);
-  margin: 0 auto;
-  padding: calc(28px + env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));
-  color: #fff;
+  height: calc(var(--u) * 583 + env(safe-area-inset-bottom));
+  transform: translate(-50%, 0);
+  border-radius: calc(var(--u) * 50) calc(var(--u) * 50) 0 0;
+  background: #fff;
+  box-shadow: 0 calc(var(--u) * -10) calc(var(--u) * 20) calc(var(--u) * 20) rgba(111, 111, 111, .1);
+  transition: transform .45s cubic-bezier(.3, .1, .2, 1);
 }
-.close {
-  position: absolute;
-  top: calc(16px + env(safe-area-inset-top));
-  right: 12px;
-  width: 44px;
-  height: 44px;
+.sheet.down { transform: translate(-50%, 110%); }
+.sheet > * { position: absolute; }
+.sheet .handle {
+  left: calc(var(--u) * 158);
+  top: calc(var(--u) * 24.5);
+  width: calc(var(--u) * 86);
+  height: calc(var(--u) * 7);
+  border-radius: 9px;
+  background: var(--line);
+}
+.sheet .back {
+  left: calc(var(--u) * 7);
+  top: calc(var(--u) * 41);
+  width: calc(var(--u) * 46);
+  height: calc(var(--u) * 46);
   border: 0;
   background: none;
-  color: #fff;
-  font-size: 32px;
-  line-height: 1;
+  font: 600 calc(var(--u) * 24) / 1 var(--font);
+  color: var(--ink);
   cursor: pointer;
 }
-h2 { font-size: 24px; font-weight: 700; }
-.guide { margin-top: 4px; font-size: 15px; opacity: .85; }
+/* 제목: [이름]'s momi — 이름이 없으면 회색 빈칸 */
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 5);
+  left: 0;
+  right: 0;
+  top: calc(var(--u) * 53);
+  height: calc(var(--u) * 24);
+  pointer-events: none;
+}
+.title .who { font: 800 calc(var(--u) * 22) / 1.2 var(--font); color: var(--ink); white-space: nowrap; }
+.title .who:empty { width: calc(var(--u) * 65); height: calc(var(--u) * 24); background: #e6e5e6; }
+.title img { width: calc(var(--u) * 111); height: auto; }
 
-/* 색 6개(2열 3줄) + 모양 3개 */
-.pick { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; }
-.colors { display: grid; grid-template-columns: repeat(2, 52px); gap: 6px; }
+/* 미리보기: 고른 모양·색 + 안에 쓴 글과 날짜 */
+.preview { left: calc(var(--u) * 124); top: calc(var(--u) * 96); width: calc(var(--u) * 151); height: calc(var(--u) * 151); }
+.big { position: relative; width: 100%; height: 100%; }
+.big svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.big svg * { transition: fill .3s; }
+.big .txt, .big .date { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; white-space: pre-wrap; }
+.big .txt { top: 46%; width: 70%; font: 400 calc(var(--u) * 12) / 1.3 var(--font); color: var(--ink); transform: translate(-50%, -50%); }
+.big .date { white-space: nowrap; top: 73.5%; font: 400 calc(var(--u) * 10) / 1.2 var(--font); color: #fff; }
+.big.triangle .txt { left: 61%; top: 64%; width: 50%; }   /* 세모(◢)는 오른쪽 아래가 넓어서 그쪽으로 */
+.big.triangle .date { left: 62%; top: 78%; }
+.big.square .date { top: 80%; }
+
+/* 모양 고르기 (53 칸 3개, 고른 칸은 고른 색 테두리) */
+.shapes { left: calc(var(--u) * 109); top: calc(var(--u) * 269); display: flex; gap: calc(var(--u) * 10.5); }
+.shapes button {
+  position: relative;
+  width: calc(var(--u) * 53);
+  height: calc(var(--u) * 53);
+  padding: 0;
+  border: 1px solid #f3f3f3;
+  border-radius: calc(var(--u) * 3);
+  background: #fff;
+  cursor: pointer;
+}
+.shapes button[aria-checked="true"]::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * -3);
+  border: 2px solid var(--pick);
+  border-radius: calc(var(--u) * 5);
+}
+.shapes svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); overflow: visible; }
+.shapes .square svg { width: calc(var(--u) * 23); }
+.shapes .circle svg { width: calc(var(--u) * 25); }
+.shapes .triangle svg { width: calc(var(--u) * 27); }
+.shapes svg * { fill: var(--grey01); transition: fill .2s; }
+.shapes [aria-checked="true"] svg * { fill: var(--pick); }
+
+/* 색 고르기 (지름 30 동그라미 6개, 고른 색은 안쪽에 흰 고리) */
+.colors { left: calc(var(--u) * 49); top: calc(var(--u) * 336); display: flex; gap: calc(var(--u) * 25); }
 .colors button {
-  width: 52px;
-  height: 52px;
+  position: relative;
+  width: calc(var(--u) * 29.5);
+  height: calc(var(--u) * 29.5);
+  padding: 0;
   border: 0;
-  border-radius: 5px;
+  border-radius: 50%;
   background: var(--col);
   cursor: pointer;
-  transition: transform .15s;
 }
-.colors button[aria-checked="true"] { outline: 3px solid #fff; outline-offset: 2px; transform: scale(.92); }
-.shapes { display: flex; gap: 8px; }
-.shapes button {
-  width: 56px;
-  height: 56px;
-  border: 0;
-  padding: 0;
-  background: none;
-  cursor: pointer;
+.colors button[aria-checked="true"]::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--u) * 17);
+  height: calc(var(--u) * 17);
+  transform: translate(-50%, -50%);
+  border: calc(var(--u) * 3) solid #fff;
+  border-radius: 50%;
 }
-.shapes button i { display: block; width: 100%; height: 100%; background: var(--fill, var(--blank)); border-radius: 5px; transition: background .2s, transform .15s; }
-.shapes .circle i { border-radius: 50%; }
-.shapes .triangle i { border-radius: 0; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
-.shapes button[aria-checked="true"] i { --fill: var(--col, #fff); transform: scale(1.08); }
-.shapes button[aria-checked="false"] i { opacity: .9; }
 
-textarea, .row {
-  display: block;
-  width: 100%;
-  margin-top: 24px;
-  border: 0;
-  border-radius: 12px;
+/* 입력칸·버튼 */
+.field {
+  left: calc(var(--u) * 34);
+  width: calc(var(--u) * 336);
+  height: calc(var(--u) * 49);
+  padding: 0 calc(var(--u) * 20);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--u) * 88);
+  outline: none;
   background: #fff;
+  font: 700 max(16px, calc(var(--u) * 16)) / 1.2 var(--font);   /* 16px 이상: 아이폰 화면 확대 방지 */
   color: var(--ink);
 }
-textarea {
-  padding: 14px 16px;
-  resize: none;
-  outline: none;
-  font-size: 18px;   /* 16px 이상이어야 아이폰에서 화면이 확대되지 않음 */
-  line-height: 1.45;
-  min-height: 80px;
+.field::placeholder { color: var(--line); }
+.field:focus { border-color: #bdbcbd; }
+#text { top: calc(var(--u) * 381); }
+#name { top: calc(var(--u) * 436); }
+.msg {
+  left: 0;
+  right: 0;
+  top: calc(var(--u) * 487);
+  font: 700 calc(var(--u) * 12) / 1.2 var(--font);
+  color: var(--bad);
+  text-align: center;
 }
-.row { display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 0 16px; height: 52px; }
-.row input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font-size: 16px; }
-.len { font-size: 13px; color: #999; font-variant-numeric: tabular-nums; }
-textarea::placeholder, input::placeholder { color: #aaa; }
-
 .send {
-  display: block;
-  width: 100%;
-  height: 56px;
-  margin-top: 20px;
+  left: calc(var(--u) * 34);
+  top: calc(var(--u) * 503);
+  width: calc(var(--u) * 336);
+  height: calc(var(--u) * 56);
   border: 0;
-  border-radius: 14px;
+  border-radius: calc(var(--u) * 88);
   background: var(--ink);
   color: #fff;
-  font-size: 17px;
-  font-weight: 700;
+  font: 700 calc(var(--u) * 16) / 1.2 var(--font);
   cursor: pointer;
+  transition: opacity .2s;
 }
-.send:disabled { opacity: .35; cursor: default; }
-.msg { min-height: 1.5em; margin-top: 10px; font-size: 14px; text-align: center; }
-.msg.bad { color: #ffe1e1; font-weight: 700; }
+.send:disabled { opacity: .3; cursor: default; }
 
-/* 글 보기 카드 */
+/* ---------- 모미 보기 (판에서 모미를 눌렀을 때) ---------- */
 .card {
   position: fixed;
   inset: 0;
   z-index: 20;
   display: grid;
   place-items: center;
-  padding: 24px;
-  background: rgba(60, 60, 60, .35);
+  background: rgba(51, 51, 51, .25);
   animation: fade .2s;
 }
 @keyframes fade { from { opacity: 0; } }
 .card-box {
-  width: min(100%, 360px);
-  padding: 28px 24px 22px;
-  border-radius: 18px;
+  position: relative;
+  width: calc(var(--u) * 300);
+  height: calc(var(--u) * 300);
+  border-radius: calc(var(--u) * 40);
   background: #fff;
-  text-align: center;
-  animation: pop .25s ease-out;
+  animation: rise .25s ease-out;
 }
-@keyframes pop { from { transform: scale(.94); } }
-.card-shape { display: inline-block; width: 44px; height: 44px; background: var(--col); border-radius: 5px; }
-.card-shape.circle { border-radius: 50%; }
-.card-shape.triangle { border-radius: 0; }
-.card-shape.t0 { clip-path: polygon(100% 0, 100% 100%, 0 100%); }
-.card-shape.t1 { clip-path: polygon(0 0, 100% 100%, 0 100%); }
-.card-shape.t2 { clip-path: polygon(0 0, 100% 0, 0 100%); }
-.card-shape.t3 { clip-path: polygon(0 0, 100% 0, 100% 100%); }
-.card-text { margin-top: 14px; font-size: 20px; line-height: 1.45; font-weight: 500; }
-.card-meta { display: block; margin-top: 10px; font-size: 13px; color: var(--sub); }
+@keyframes rise { from { transform: translateY(12px); opacity: 0; } }
+.card-box .title { position: absolute; top: calc(var(--u) * 34); }
+.card-box .big { position: absolute; left: calc(var(--u) * 74.5); top: calc(var(--u) * 92); width: calc(var(--u) * 151); height: calc(var(--u) * 151); }
 
 /* 관리 화면 (흰 바탕) */
 body.admin { background: #fff; }
