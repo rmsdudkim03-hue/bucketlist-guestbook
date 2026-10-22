@@ -18,24 +18,31 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 const TRI = 'M55.8905 0.589681C57.1505 -0.670108 59.3046 0.222263 59.3046 2.004L59.3046 57.2966C59.3046 58.4012 58.4092 59.2966 57.3046 59.2966H2.00398C0.222096 59.2966 -0.670209 57.1422 0.589861 55.8823L55.8905 0.589681Z';
 const TRI_BIG = 'M126.881 0.294909C127.511 -0.335055 128.588 0.111107 128.588 1.00201L128.588 127.588C128.588 128.14 128.14 128.588 127.588 128.588H1.00211C0.111203 128.588 -0.334968 127.511 0.294997 126.881L126.881 0.294909Z';
 const TRI_ICON = 'M24.8808 0.294872C25.5107 -0.335093 26.5879 0.111077 26.5879 1.00198L26.5879 25.5878C26.5879 26.1401 26.1402 26.5878 25.5879 26.5878H1.0021C0.111198 26.5878 -0.334968 25.5106 0.294997 24.8807L24.8808 0.294872Z';
-// 판 위 한 칸(68): 네모 62(안쪽 3), 동그라미 68, 세모 ◢
+/* 세모 방향 (turn): 직각이 있는 모서리 0 ◢ 오른쪽 아래 → 1 ◣ 왼쪽 아래 → 2 ◤ 왼쪽 위 → 3 ◥ 오른쪽 위
+   (시계 방향으로 90°씩). 피그마 ◢ 모양을 제자리에서 뒤집어서 만듦 (cx, cy = 세모 상자의 가운데) */
+function flip(turn, cx, cy) {
+  return ['', `translate(${2 * cx} 0) scale(-1 1)`, `translate(${2 * cx} ${2 * cy}) scale(-1 -1)`, `translate(0 ${2 * cy}) scale(1 -1)`][turn] || '';
+}
+const tri = (turn, cx, cy, inner) => `<g transform="${flip(turn, cx, cy)}">${inner}</g>`;
+// 판 위 한 칸(68): 네모 62(안쪽 3), 동그라미 68, 세모
 const CELL_SVG = {
-  square: '<rect x="3" y="3" width="62" height="62" rx="2"/>',
-  circle: '<circle cx="34" cy="34" r="34"/>',
-  triangle: `<path transform="translate(5.83 5.83)" d="${TRI}"/>`,
+  square: () => '<rect x="3" y="3" width="62" height="62" rx="2"/>',
+  circle: () => '<circle cx="34" cy="34" r="34"/>',
+  triangle: (t) => tri(t, 35.48, 35.48, `<path transform="translate(5.83 5.83)" d="${TRI}"/>`),
 };
 // 미리보기·보기 (151): 동그라미 151, 세모·네모 130
 const BIG_SVG = {
-  square: '<rect x="10.5" y="10.5" width="130" height="130" rx="4"/>',
-  circle: '<circle cx="75.5" cy="75.5" r="75.5"/>',
-  triangle: `<path transform="translate(4 -5)" d="${TRI_BIG}"/>`,   // 피그마 13: 세모가 8 위로
+  square: () => '<rect x="10.5" y="10.5" width="130" height="130" rx="4"/>',
+  circle: () => '<circle cx="75.5" cy="75.5" r="75.5"/>',
+  triangle: (t) => tri(t, 68.3, 59.3, `<path transform="translate(4 -5)" d="${TRI_BIG}"/>`),   // 피그마 13: 세모가 8 위로
 };
 // 고르기 칸 안의 작은 모양
 const ICON_SVG = {
-  square: '<svg viewBox="0 0 23 23"><rect width="23" height="23" rx="2"/></svg>',
-  circle: '<svg viewBox="0 0 25 25"><circle cx="12.5" cy="12.5" r="12.5"/></svg>',
-  triangle: `<svg viewBox="0 0 27 27"><path d="${TRI_ICON}"/></svg>`,
+  square: () => '<svg viewBox="0 0 23 23"><rect width="23" height="23" rx="2"/></svg>',
+  circle: () => '<svg viewBox="0 0 25 25"><circle cx="12.5" cy="12.5" r="12.5"/></svg>',
+  triangle: (t) => `<svg viewBox="0 0 27 27">${tri(t, 13.29, 13.29, `<path d="${TRI_ICON}"/>`)}</svg>`,
 };
+const turnOf = (it) => (it.shape === 'triangle' ? it.turn || 0 : 0);
 
 // 방금 쓴 모미에 그려지는 체크 (원 테두리 → 검정 채움 → 체크 한 획 → 톡 + 짧은 선 10개·물결)
 const RAYS = Array.from({ length: 10 }, (_, i) => {
@@ -48,22 +55,28 @@ const DONE = `<svg class="done" viewBox="0 0 84 84" aria-hidden="true">${RAYS}<c
 
 // 큰 모미 (모양 + 안에 글·날짜)
 function bigHTML(it) {
-  return `<svg viewBox="0 0 151 151" aria-hidden="true"><g fill="${col(it.color)}">${BIG_SVG[it.shape]}</g></svg>`
+  return `<svg viewBox="0 0 151 151" aria-hidden="true"><g fill="${col(it.color)}">${BIG_SVG[it.shape](turnOf(it))}</g></svg>`
     // 글을 쓰기 전(빈 미리보기)엔 글·날짜 없이 모양만 (피그마 'iPhone 17 - 12')
     + (it.text ? `<p class="txt">${esc(it.text)}</p><p class="date">${esc(day(it.at))}</p>` : '');
 }
-// 세모(◢) 안 글이 길면 빗변 밖으로 나가지 않을 때까지 글자를 줄임 (12 → 최소 8, 피그마 기준 크기)
-// 세모 안쪽 = 미리보기 칸(151) 기준 x + y ≥ 128 인 곳. 글 상자의 왼쪽 위 모서리가 그 안에 들어오면 OK
+// 세모 안 글이 길면 빗변 밖으로 나가지 않을 때까지 글자를 줄임 (12 → 최소 8, 피그마 기준 크기)
+// 글 상자에서 직각과 가장 먼 모서리가 빗변 안쪽에 있으면 OK (미리보기 칸 151 기준, 세모 상자 4~132.6 × -5~123.6)
 function fitTri(big) {
   const t = big.querySelector('.txt');
   if (!big.classList.contains('triangle') || !t) return;
+  const turn = Number(big.dataset.turn) || 0;
   const box = big.getBoundingClientRect(), k = 151 / box.width;
   for (let size = 12; size >= 8; size -= 0.5) {
     t.style.fontSize = `calc(var(--u) * ${size})`;
     const r = t.getBoundingClientRect();
-    if ((r.left - box.left) * k + (r.top - box.top) * k >= 124) return;
+    const L = (r.left - box.left) * k, T = (r.top - box.top) * k, R = (r.right - box.left) * k, B = (r.bottom - box.top) * k;
+    const u = turn === 0 || turn === 3 ? L - 4 : 132.6 - R;      // 직각에서 가로로 먼 쪽
+    const v = turn === 0 || turn === 1 ? T + 5 : 123.6 - B;      // 직각에서 세로로 먼 쪽
+    if (u + v >= 125) return;
   }
 }
+// 큰 모미 상자 (모양에 맞는 글 정렬을 위해 세모 방향을 붙임)
+const bigBox = (it) => `<div class="big ${it.shape} t${turnOf(it)}" data-turn="${turnOf(it)}">${bigHTML(it)}</div>`;
 function day(iso) {
   const d = iso ? new Date(iso) : new Date();
   if (Number.isNaN(d.getTime())) return '';
@@ -108,6 +121,8 @@ function layout(list) {
     // 예전 글(모양·색 없음)은 글id로 정해 둠
     if (!SHAPES.includes(it.shape)) it.shape = SHAPES[Math.floor(rng(it.id + 's')() * 3)];
     if (!(it.color >= 0 && it.color < 6)) it.color = Math.floor(rng(it.id + 'c')() * 6);
+    // 방향 없이 남긴 예전 세모는 글id로 방향을 정함 (판이 한 방향으로만 보이지 않게)
+    if (it.shape === 'triangle' && !(it.turn >= 0 && it.turn < 4)) it.turn = Math.floor(rng(it.id + 't')() * 4);
     const rand = rng(it.id);
     let best = { c: 0, r: 0 };
     if (taken.size) {
@@ -148,7 +163,7 @@ function render() {
     b.style.left = `calc(var(--u) * ${p.c * 71})`;
     b.style.top = `calc(var(--u) * ${p.r * 71})`;
     b.setAttribute('aria-label', `${SHAPE_NAMES[p.it.shape]} 모미: ${p.it.text}`);
-    b.innerHTML = `<svg viewBox="0 0 68 68" aria-hidden="true"><g fill="${col(p.it.color)}">${CELL_SVG[p.it.shape]}</g></svg>`
+    b.innerHTML = `<svg viewBox="0 0 68 68" aria-hidden="true"><g fill="${col(p.it.color)}">${CELL_SVG[p.it.shape](turnOf(p.it))}</g></svg>`
       + (p.it.id === justPosted ? DONE : '');   // 체크는 방금 쓴 모미에만, 모션이 끝날 때까지
     if (drawn && !seen.has(p.it.id)) b.classList.add('pop');
     return b;
@@ -252,7 +267,8 @@ world.addEventListener('click', (e) => {
 function showCard(it) {
   $('cardWho').textContent = it.name || '익명';
   const big = $('cardBig');
-  big.className = `big ${it.shape}`;
+  big.className = `big ${it.shape} t${turnOf(it)}`;
+  big.dataset.turn = turnOf(it);
   big.innerHTML = bigHTML(it);
   $('card').hidden = false;
   fitTri(big);
@@ -282,7 +298,7 @@ setInterval(() => { if (!document.hidden && sheet.classList.contains('down')) re
 
 /* ---------- 쓰기 시트 ---------- */
 const sheet = $('sheet'), text = $('text'), name = $('name'), sendBtn = $('send'), msg = $('msg');
-let pick = { shape: 'triangle', color: 5 };   // 피그마 첫 화면: 세모 + 연두
+let pick = { shape: 'triangle', color: 5, turn: 0 };   // 피그마 첫 화면: 세모 + 연두 (방향은 시트를 열 때 무작위)
 
 SHAPES.forEach((s) => {
   const b = document.createElement('button');
@@ -290,8 +306,14 @@ SHAPES.forEach((s) => {
   b.className = s;
   b.setAttribute('role', 'radio');
   b.setAttribute('aria-label', SHAPE_NAMES[s]);
-  b.innerHTML = ICON_SVG[s];
-  b.onclick = () => { pick.shape = s; update(); };
+  b.innerHTML = ICON_SVG[s](0);
+  b.onclick = () => {
+    // 세모를 고른 상태에서 세모를 한 번 더 누르면 시계 방향으로 90° 돌아감 (◢ → ◣ → ◤ → ◥)
+    const spin = s === 'triangle' && pick.shape === 'triangle';
+    if (spin) pick.turn = (pick.turn + 1) % 4;
+    pick.shape = s;
+    update(spin);
+  };
   $('shapes').append(b);
 });
 PALETTE.forEach((i) => {
@@ -304,14 +326,21 @@ PALETTE.forEach((i) => {
   $('colors').append(b);
 });
 
-function update() {
+function update(spin = false) {
   sheet.style.setProperty('--pick', col(pick.color));
+  const triBtn = $('shapes').querySelector('.triangle');
+  triBtn.innerHTML = ICON_SVG.triangle(pick.turn);
+  triBtn.setAttribute('aria-label', `세모 (누를 때마다 방향이 바뀜)`);
   [...$('shapes').children].forEach((b, k) => b.setAttribute('aria-checked', String(SHAPES[k] === pick.shape)));
   [...$('colors').children].forEach((b, k) => b.setAttribute('aria-checked', String(PALETTE[k] === pick.color)));
   $('who').textContent = name.value.trim();
   const pv = $('preview');
-  pv.innerHTML = `<div class="big ${pick.shape}">${bigHTML({ ...pick, text: text.value.trim(), at: null })}</div>`;
+  pv.innerHTML = bigBox({ ...pick, text: text.value.trim(), at: null });
   fitTri(pv.firstElementChild);
+  if (spin) {   // 방금 돌린 것처럼 보이게: 새 방향이 90° 뒤에서 돌아 들어옴
+    pv.querySelector('svg').classList.add('spin');
+    triBtn.querySelector('svg').classList.add('spin');
+  }
   sendBtn.disabled = !text.value.trim();
 }
 text.addEventListener('input', () => { msg.textContent = ''; update(); });
@@ -345,6 +374,8 @@ function celebrate(id) {
   }, 1500);
 }
 function openSheet() {
+  // 세모 방향은 열 때마다 무작위로 (다들 그대로 남겨도 판이 한 방향으로 쏠리지 않게). 세모를 한 번 더 누르면 돌아감
+  pick.turn = Math.floor(Math.random() * 4);
   $('card').hidden = true;
   sheet.inert = false;
   sheet.classList.remove('down');
@@ -392,7 +423,7 @@ sheet.addEventListener('submit', async (e) => {
     const r = await fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: text.value, name: name.value, shape: pick.shape, color: pick.color }),
+      body: JSON.stringify({ text: text.value, name: name.value, shape: pick.shape, color: pick.color, turn: pick.turn }),
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) {

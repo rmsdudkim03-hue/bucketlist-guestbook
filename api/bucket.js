@@ -1,8 +1,8 @@
 // 버킷리스트 방명록 서버
-// 글은 저장소에 한 개씩 bucket/글id.json 으로 저장 { text, name, shape, color, at }. 글id 앞부분이 '거꾸로 시간'이라 최신이 먼저 나옴
-//   shape: 'square' | 'triangle' | 'circle',  color: 0~5 (화면의 색 6개 순서)
+// 글은 저장소에 한 개씩 bucket/글id.json 으로 저장 { text, name, shape, color, turn, at }. 글id 앞부분이 '거꾸로 시간'이라 최신이 먼저 나옴
+//   shape: 'square' | 'triangle' | 'circle',  color: 0~5 (화면의 색 6개 순서),  turn: 세모 방향 0~3 (◢ ◣ ◤ ◥, 세모만)
 // GET                    → 글 전체 { enabled, items: [{ id, text, name, shape, color, at }] } (최신이 먼저)
-// POST { text, name, shape, color } → 글 남기기 → { item }. 나쁜 말이면 400 { error: 'bad_word' }
+// POST { text, name, shape, color, turn } → 글 남기기 → { item }. 나쁜 말이면 400 { error: 'bad_word' }
 // 관리 (헤더 x-admin-code = Vercel 환경 변수 ADMIN_CODE)
 //   GET ?admin=1           → 글 전체 (캐시 없이)
 //   POST { remove: 글id }  → 글 지우기
@@ -90,7 +90,8 @@ async function post(req, res) {
   if (lastPost.size > 5000) lastPost.clear();
 
   const id = newKey();
-  const item = { text, name, shape, color, at: new Date().toISOString() };
+  const turn = Number(body.turn);
+  const item = { text, name, shape, color, ...(shape === 'triangle' ? { turn: Number.isInteger(turn) && turn >= 0 && turn < 4 ? turn : 0 } : {}), at: new Date().toISOString() };
   await store.put(`bucket/${id}.json`, JSON.stringify(item), 'application/json');
   memo.set(id, { id, ...item });
   send(res, 200, { item: { id, ...item } });
