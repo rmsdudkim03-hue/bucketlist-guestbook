@@ -141,6 +141,7 @@
   function close() {
     closing = true;
     el.classList.add('out');
+    window.dispatchEvent(new Event('loader:done')); // 안내 화면 시작 (intro.js)
     setTimeout(() => el.remove(), 500);
   }
 

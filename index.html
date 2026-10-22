@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,6 +21,14 @@
     <svg class="loader-shape" viewBox="-40 -40 80 80" aria-hidden="true"><path stroke-width="4" stroke-linejoin="round"/></svg>
   </div>
 </div>
+<!-- 첫 안내 화면 2장 (피그마 'iPhone 17 - 1', 'iPhone 17 - 7'). 강조 낱말에 형광펜 밑줄이 그어짐 (intro.js) -->
+<section class="intro" id="intro">
+  <img class="loader-logo" src="assets/logo.svg" alt="our momi MAP">
+  <p class="intro-text s1">여러분이 <mark class="x">하고 싶은 일</mark>은<br>무엇인가요?</p>
+  <p class="intro-text s2">여러분의 <mark>모미</mark>를 남겨주세요 !</p>
+  <button class="intro-btn" id="introGo" type="button">모미 남기기</button>
+</section>
+
 <main class="page">
   <header class="head">
     <h1>BUCKET LIST</h1>
@@ -35,7 +44,7 @@
   <p class="note" id="note"></p>
 </main>
 
-<button class="cta" id="open">나도 남기기</button>
+<button class="cta" id="open">모미 남기기</button>
 
 <!-- 쓰기 화면: 색 6개 + 모양 3개 고르고 한 줄 쓰기 -->
 <section class="sheet" id="sheet" hidden aria-label="버킷리스트 쓰기">
@@ -71,6 +80,7 @@
 </div>
 
 <script src="loader.js"></script>
+<script src="intro.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

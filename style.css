@@ -314,3 +314,67 @@ body.admin { background: #fff; }
   overflow: visible;
   transform-origin: 50% 88.75%;   /* 도형 아래쪽(가운데에서 31 아래) 기준으로 납작해짐 */
 }
+
+/* 첫 안내 화면 (피그마 402×874 프레임 기준, 좌표 × --u)
+   글은 Pretendard 24px, 회색 #b8b8b8, 강조 낱말은 #333 굵게 + 형광펜 밑줄(팬톤 379 C ≈ #E2E868) */
+.intro {
+  --hl: #e2e868;      /* 밑줄 색: 팬톤 379 C를 화면 색으로 옮긴 값 */
+  position: fixed;
+  inset: 0;
+  z-index: 90;        /* 로딩 화면 바로 아래 → 로딩이 사라지면 보임 */
+  background: #fff;
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  transition: opacity .45s ease;
+}
+.intro.out { opacity: 0; pointer-events: none; }
+.intro-text {
+  position: absolute;
+  left: 50%;
+  width: var(--w);
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: calc(var(--u) * 24);
+  line-height: 1.2;
+  text-align: center;
+  color: #b8b8b8;
+  letter-spacing: 0;
+  opacity: 0;
+  transition: opacity .5s ease, transform .5s ease;
+}
+/* 세로 위치: 피그마 글 상자 위쪽 y (프레임 가운데 437 기준) */
+.intro-text.s1 { top: calc(50% + var(--u) * (414 - 437)); }
+.intro-text.s2 { top: calc(50% + var(--u) * (422 - 437)); }
+.intro-text.show { opacity: 1; }
+.intro-text.leave { opacity: 0; transform: translate(-50%, calc(var(--u) * -10)); }
+
+/* 형광펜 밑줄: 글자 아래쪽 절반쯤에 색 띠를 0% → 100% 폭으로 그음. 줄이 바뀌어도 이어서 그어짐 */
+.intro mark {
+  color: #333;
+  font-weight: 700;
+  background: linear-gradient(transparent 55%, var(--hl) 55% 95%, transparent 95%) no-repeat 0 0 / 0% 100%;
+  transition: background-size .9s cubic-bezier(.6, .1, .2, 1);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0 .06em;
+}
+.intro mark.x { font-weight: 800; }   /* 피그마: '하고 싶은 일'은 ExtraBold, '모미'는 Bold */
+.intro-text.line mark { background-size: 100% 100%; }
+
+.intro-btn {
+  position: absolute;
+  left: calc(50% - var(--w) / 2 + var(--u) * 78);
+  bottom: calc(var(--u) * 68 + env(safe-area-inset-bottom));
+  width: calc(var(--u) * 246);
+  height: calc(var(--u) * 56);
+  border: 0;
+  border-radius: calc(var(--u) * 88);
+  background: #333;
+  color: #fff;
+  font: 700 calc(var(--u) * 16) / 1.2 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(calc(var(--u) * 12));
+  pointer-events: none;
+  transition: opacity .5s ease, transform .5s ease;
+}
+.intro-btn.show { opacity: 1; transform: none; pointer-events: auto; }
