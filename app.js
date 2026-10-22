@@ -369,6 +369,8 @@ function snap(btn, then) {
   if (then) setTimeout(then, 300);
 }
 window.openSheet = openSheet;   // 안내 화면 버튼(intro.js)에서 씀
+// 아이폰 사파리는 이게 있어야 손가락으로 누르고 있는 동안(:active) 모미가 떠오르는 효과가 보임
+document.addEventListener('touchstart', () => {}, { passive: true });
 $('open').onclick = openSheet;
 $('close').onclick = closeSheet;
 $('sheetDim').onclick = closeSheet;
