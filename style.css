@@ -104,31 +104,31 @@ button, input, textarea { font: inherit; color: inherit; }
   color: #fff;
   font: 700 calc(var(--u) * 16) / 1.2 var(--font);
   cursor: pointer;
-  transition: opacity .3s, transform .3s, translate .12s cubic-bezier(.3, 0, .4, 1), box-shadow .12s cubic-bezier(.3, 0, .4, 1);
+  transition: opacity .3s, transform .3s, translate .2s ease, box-shadow .25s ease;
 }
 .cta.away { opacity: 0; transform: translate(-50%, 20px); pointer-events: none; }
 
-/* ---------- 버튼 누름 모션 (뉴브루탈리즘 버튼 참고) ----------
-   마우스를 올리거나 누르고 있으면 버튼이 왼쪽 위로 떠오르고, 블러 없는 단단한 그림자(연두)가 생김.
-   클릭하면 찰칵: 눌렸다가 튀어 올라 그림자가 커졌다가 제자리로 (app.js snap()).
-   기존 위치 이동(transform)과 섞이지 않게 translate·scale·rotate를 따로 씀 */
-.cta, .send, .intro-btn { --shc: #e2e868; }   /* 그림자 색: 밑줄과 같은 연두 */
+/* ---------- 버튼 누름 모션 ----------
+   마우스를 올리거나 누르고 있으면 버튼이 살짝 떠오르고, 부드러운 그림자가 오른쪽 아래로 퍼짐
+   (피그마 완료 알림 그림자와 같은 결: 오른쪽 아래로 5, 흐림 30). 클릭하면 찰칵: 튀어 올라 그림자가 커졌다가 제자리로 (app.js snap()).
+   기존 위치 이동(transform)과 섞이지 않게 translate·scale을 따로 씀 */
+.cta, .send, .intro-btn { --shc: rgba(0, 0, 0, .22); }   /* 그림자 색 */
 @media (hover: hover) {
   .cta:hover, .send:hover:not(:disabled), .intro-btn.show:hover {
-    translate: calc(var(--u) * -4) calc(var(--u) * -4);
-    box-shadow: calc(var(--u) * 4) calc(var(--u) * 4) 0 var(--shc);
+    translate: 0 calc(var(--u) * -3);
+    box-shadow: calc(var(--u) * 5) calc(var(--u) * 8) calc(var(--u) * 24) var(--shc);
   }
 }
 .cta:active, .send:active:not(:disabled), .intro-btn.show:active {
-  translate: calc(var(--u) * -4) calc(var(--u) * -4);
-  box-shadow: calc(var(--u) * 4) calc(var(--u) * 4) 0 var(--shc);
+  translate: 0 calc(var(--u) * -3);
+  box-shadow: calc(var(--u) * 5) calc(var(--u) * 8) calc(var(--u) * 24) var(--shc);
 }
-.snap { animation: snap .42s cubic-bezier(.2, 1.6, .4, 1); }
+.snap { animation: snap .45s cubic-bezier(.2, 1.4, .4, 1); }
 .send.snap:disabled { opacity: 1; }   /* 보내는 중에도 찰칵이 흐려지지 않게 */
 @keyframes snap {
-  0% { translate: 0 0; scale: 1; rotate: 0deg; box-shadow: 0 0 0 var(--shc); }
-  35% { translate: calc(var(--u) * -6) calc(var(--u) * -6); scale: 1.05; rotate: -1.5deg; box-shadow: calc(var(--u) * 8) calc(var(--u) * 8) 0 var(--shc); }
-  100% { translate: 0 0; scale: 1; rotate: 0deg; box-shadow: 0 0 0 var(--shc); }
+  0% { translate: 0 0; scale: .97; box-shadow: calc(var(--u) * 2) calc(var(--u) * 3) calc(var(--u) * 8) var(--shc); }
+  40% { translate: 0 calc(var(--u) * -6); scale: 1.04; box-shadow: calc(var(--u) * 6) calc(var(--u) * 12) calc(var(--u) * 30) var(--shc); }
+  100% { translate: 0 0; scale: 1; box-shadow: 0 0 0 transparent; }
 }
 
 /* ---------- 모미 쓰기 시트 (피그마 'iPhone 17 - 12', '- 8') ----------
@@ -284,7 +284,7 @@ button, input, textarea { font: inherit; color: inherit; }
   color: #fff;
   font: 700 calc(var(--u) * 16) / 1.2 var(--font);
   cursor: pointer;
-  transition: opacity .2s, translate .12s cubic-bezier(.3, 0, .4, 1), box-shadow .12s cubic-bezier(.3, 0, .4, 1);
+  transition: opacity .2s, translate .2s ease, box-shadow .25s ease;
 }
 .send:disabled { opacity: .3; cursor: default; }
 
@@ -497,6 +497,6 @@ body.admin { background: #fff; }
   opacity: 0;
   transform: translateY(calc(var(--u) * 12));
   pointer-events: none;
-  transition: opacity .5s ease, transform .5s ease, translate .12s cubic-bezier(.3, 0, .4, 1), box-shadow .12s cubic-bezier(.3, 0, .4, 1);
+  transition: opacity .5s ease, transform .5s ease, translate .2s ease, box-shadow .25s ease;
 }
 .intro-btn.show { opacity: 1; transform: none; pointer-events: auto; }
