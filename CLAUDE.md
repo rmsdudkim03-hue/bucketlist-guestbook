@@ -14,7 +14,7 @@
 - 폰트 Apple SD Gothic Neo → Noto Sans KR. 입력칸 글자는 16px 이상 (아이폰 확대 방지).
 
 ## 구조
-- 로딩 화면 (`index.html` #loader, `loader.js`, 피그마 https://www.figma.com/design/RS5csopSjftTR93zZbuXWp/Untitled?node-id=0-1 'iPhone 17 - 2·4·5', 402×874): 로고 `assets/logo.svg`(피그마 our + momi MAP을 한 파일로, our 글자는 윤곽선) + 가운데 도형이 바닥 그림자에 한 번 튕기고 올라가는 동안 모양·색이 서서히 다음 도형으로 바뀜(모핑: 세 도형을 같은 개수 160개의 점으로 만들어 가까운 점끼리 이어 바꿈, 모서리 둥글기는 같은 색 4px 선) (네모 연두 → 동그라미 주황 → 세모 초록). 떨어질 때 길쭉·바닥에서 납작·튀어 오를 때 길쭉·제자리보다 살짝 더 올라갔다 내려앉음 (`loader.js`의 K 표). 좌표 = 피그마 px × `--u`(화면 폭÷402). 세 도형을 다 보여 주고 글을 다 불러오면 도형이 맨 위일 때 사라짐 (8초 넘으면 그냥 넘어감). 주소 끝 `#loader`면 안 사라짐(모션 확인용)
+- 로딩 화면 (`index.html` #loader, `loader.js`, 피그마 https://www.figma.com/design/RS5csopSjftTR93zZbuXWp/Untitled?node-id=0-1 'iPhone 17 - 2·4·5', 402×874): 로고 `assets/logo.svg`(피그마 our + momi MAP을 한 파일로, our 글자는 윤곽선) + 가운데 도형이 바닥 그림자(#e6e5e6, 피그마 레이어 블러 10 → CSS blur 5px × --u)에 한 번 튕기고 올라가는 동안 모양·색이 서서히 다음 도형으로 바뀜(모핑: 세 도형을 같은 개수 160개의 점으로 만들어 가까운 점끼리 이어 바꿈, 모서리 둥글기는 같은 색 4px 선) (네모 연두 → 동그라미 주황 → 세모 초록). 떨어질 때 길쭉·바닥에서 납작·튀어 오를 때 길쭉·제자리보다 살짝 더 올라갔다 내려앉음 (`loader.js`의 K 표). 좌표 = 피그마 px × `--u`(화면 폭÷402). 세 도형을 다 보여 주고 글을 다 불러오면 도형이 맨 위일 때 사라짐 (8초 넘으면 그냥 넘어감). 주소 끝 `#loader`면 안 사라짐(모션 확인용)
 - 첫 안내 화면 2장 (`index.html` #intro, `intro.js`, 피그마 'iPhone 17 - 1', 'iPhone 17 - 7'): 로딩이 끝나면(`loader:done` 이벤트) "여러분이 **하고 싶은 일**은 무엇인가요?" → "여러분의 **모미**를 남겨주세요 !" + '모미 남기기' 버튼(누르면 쓰기 화면, 닫으면 모두의 판). 글 Pretendard 24px #b8b8b8, 강조 #333(ExtraBold/Bold) + 형광펜 밑줄(팬톤 379 C ≈ #E2E868, `.intro`의 `--hl`): mark의 background-size 0%→100% 0.9초. 1번 화면은 눌러서 넘길 수 있음. 주소 끝 `#intro`면 로딩 없이 안내 화면부터
 - 모미 = 버킷리스트 하나를 담은 도형 조각 (작품에서 쓰는 이름. 문구에 '도형' 대신 씀)
 - `index.html` `app.js` 관람객 화면: 격자 판(도형을 누르면 글 카드), '모미 남기기' → 쓰기 화면, 30초마다 새 글 확인, 내가 쓴 글은 localStorage에 기억해 숨쉬듯 움직임

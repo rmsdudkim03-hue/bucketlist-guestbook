@@ -304,6 +304,7 @@ body.admin { background: #fff; }
   height: calc(var(--u) * 14);
   border-radius: 50%;
   background: #e6e5e6;
+  filter: blur(calc(var(--u) * 5));   /* 피그마 레이어 블러 10 ≈ 웹 흐림 5px */
 }
 .loader-shape {
   position: absolute;
