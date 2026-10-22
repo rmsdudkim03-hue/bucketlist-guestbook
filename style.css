@@ -307,13 +307,10 @@ body.admin { background: #fff; }
 }
 .loader-shape {
   position: absolute;
-  left: calc(var(--u) * -33.5);
-  top: calc(var(--u) * -33.5);
-  width: calc(var(--u) * 67);
-  height: calc(var(--u) * 67);
-  transform-origin: 50% 100%;   /* 바닥에 닿을 때 아래쪽 기준으로 납작해짐 */
+  left: calc(var(--u) * -40);
+  top: calc(var(--u) * -40);
+  width: calc(var(--u) * 80);
+  height: calc(var(--u) * 80);
+  overflow: visible;
+  transform-origin: 50% 88.75%;   /* 도형 아래쪽(가운데에서 31 아래) 기준으로 납작해짐 */
 }
-.loader-flip { width: 100%; height: 100%; display: grid; place-items: center; }
-.loader-flip svg { display: block; width: calc(var(--u) * var(--s, 62)); height: auto; }
-.loader-flip svg[width="67"] { --s: 67; }
-.loader-flip svg[width="60"] { --s: 62.13; }

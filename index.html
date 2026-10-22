@@ -12,12 +12,12 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- 로딩 화면: 도형이 바닥에 튕기며 네모 → 동그라미 → 세모로 바뀜 (loader.js) -->
+<!-- 로딩 화면: 도형이 바닥에 튕기고 올라가며 네모 → 동그라미 → 세모로 서서히 바뀜 (loader.js) -->
 <div class="loader" id="loader" role="status" aria-label="불러오는 중">
   <img class="loader-logo" src="assets/logo.svg" alt="our momi MAP">
   <div class="loader-stage">
     <span class="loader-shadow"></span>
-    <div class="loader-shape"><div class="loader-flip"></div></div>
+    <svg class="loader-shape" viewBox="-40 -40 80 80" aria-hidden="true"><path stroke-width="4" stroke-linejoin="round"/></svg>
   </div>
 </div>
 <main class="page">
