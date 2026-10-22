@@ -357,7 +357,17 @@ function closeSheet() {
   $('sheetDim').hidden = true;
   if (!posted) $('open').classList.remove('away');
 }
-$('open').onclick = openSheet;
+// 버튼 찰칵 모션 (style.css .snap). 튀는 게 보이도록 다음 동작은 0.3초 뒤에
+function snap(btn, then) {
+  btn.classList.remove('snap');
+  void btn.offsetWidth;          // 다시 재생되게
+  btn.classList.add('snap');
+  btn.addEventListener('animationend', () => btn.classList.remove('snap'), { once: true });
+  if (then) setTimeout(then, 300);
+}
+window.snap = snap;
+window.openSheet = openSheet;   // 안내 화면 버튼(intro.js)에서 씀
+$('open').onclick = () => snap($('open'), openSheet);
 $('close').onclick = closeSheet;
 $('sheetDim').onclick = closeSheet;
 
@@ -372,6 +382,7 @@ const ERRORS = {
 sheet.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (sendBtn.disabled) return;
+  snap(sendBtn);
   sendBtn.disabled = true;
   msg.textContent = '';
   try {
