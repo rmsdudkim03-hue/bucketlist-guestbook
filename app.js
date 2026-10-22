@@ -28,7 +28,7 @@ const CELL_SVG = {
 const BIG_SVG = {
   square: '<rect x="10.5" y="10.5" width="130" height="130" rx="4"/>',
   circle: '<circle cx="75.5" cy="75.5" r="75.5"/>',
-  triangle: `<path transform="translate(4 3)" d="${TRI_BIG}"/>`,
+  triangle: `<path transform="translate(4 -5)" d="${TRI_BIG}"/>`,   // 피그마 13: 세모가 8 위로
 };
 // 고르기 칸 안의 작은 모양
 const ICON_SVG = {
@@ -51,6 +51,18 @@ function bigHTML(it) {
   return `<svg viewBox="0 0 151 151" aria-hidden="true"><g fill="${col(it.color)}">${BIG_SVG[it.shape]}</g></svg>`
     // 글을 쓰기 전(빈 미리보기)엔 글·날짜 없이 모양만 (피그마 'iPhone 17 - 12')
     + (it.text ? `<p class="txt">${esc(it.text)}</p><p class="date">${esc(day(it.at))}</p>` : '');
+}
+// 세모(◢) 안 글이 길면 빗변 밖으로 나가지 않을 때까지 글자를 줄임 (12 → 최소 8, 피그마 기준 크기)
+// 세모 안쪽 = 미리보기 칸(151) 기준 x + y ≥ 128 인 곳. 글 상자의 왼쪽 위 모서리가 그 안에 들어오면 OK
+function fitTri(big) {
+  const t = big.querySelector('.txt');
+  if (!big.classList.contains('triangle') || !t) return;
+  const box = big.getBoundingClientRect(), k = 151 / box.width;
+  for (let size = 12; size >= 8; size -= 0.5) {
+    t.style.fontSize = `calc(var(--u) * ${size})`;
+    const r = t.getBoundingClientRect();
+    if ((r.left - box.left) * k + (r.top - box.top) * k >= 124) return;
+  }
 }
 function day(iso) {
   const d = iso ? new Date(iso) : new Date();
@@ -240,6 +252,7 @@ world.addEventListener('click', (e) => {
   big.className = `big ${it.shape}`;
   big.innerHTML = bigHTML(it);
   $('card').hidden = false;
+  fitTri(big);
 });
 $('card').addEventListener('click', () => { $('card').hidden = true; });
 
@@ -295,6 +308,7 @@ function update() {
   $('who').textContent = name.value.trim();
   const pv = $('preview');
   pv.innerHTML = `<div class="big ${pick.shape}">${bigHTML({ ...pick, text: text.value.trim(), at: null })}</div>`;
+  fitTri(pv.firstElementChild);
   sendBtn.disabled = !text.value.trim();
 }
 text.addEventListener('input', () => { msg.textContent = ''; update(); });
