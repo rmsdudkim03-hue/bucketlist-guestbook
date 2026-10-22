@@ -134,6 +134,8 @@
       const near = Math.max(0, Math.min(1, y / 69));
       shadow.style.transform = `scale(${(1.06 - 0.34 * near) * (0.75 + 0.25 * sx)}, ${1 - 0.15 * near})`;
       shadow.style.background = `rgb(${[230 - 22 * near, 229 - 22 * near, 230 - 22 * near].map(Math.round)})`;
+      // 흐림: 맨 위에선 피그마 값(블러 10 ≈ 5px), 바닥에 닿을수록 선명하게(1px)
+      shadow.style.filter = `blur(calc(var(--u) * ${(5 - 4 * near).toFixed(2)}))`;
     }
     requestAnimationFrame(frame);
   }
