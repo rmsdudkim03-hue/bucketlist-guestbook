@@ -39,6 +39,15 @@ const ICON_SVG = {
 // 내 모미 체크 표시 (피그마 Group 34673)
 const CHECK = '<svg class="check" viewBox="0 0 25 25" aria-hidden="true"><circle cx="13" cy="13" r="8" fill="#fff"/><path fill-rule="evenodd" clip-rule="evenodd" d="M12.5 0C5.59659 0 0 5.59659 0 12.5C0 19.4034 5.59659 25 12.5 25C19.4034 25 25 19.4034 25 12.5C25 5.59659 19.4034 0 12.5 0ZM17.9182 10.3864C18.018 10.2723 18.0939 10.1395 18.1416 9.99565C18.1892 9.85182 18.2077 9.6999 18.1958 9.54885C18.1839 9.39779 18.1419 9.25064 18.0722 9.11605C18.0026 8.98147 17.9068 8.86216 17.7904 8.76516C17.674 8.66816 17.5394 8.59541 17.3944 8.55121C17.2495 8.507 17.0972 8.49223 16.9465 8.50776C16.7957 8.52329 16.6496 8.5688 16.5168 8.64163C16.3839 8.71445 16.2669 8.81312 16.1727 8.93182L11.2864 14.7943L8.75795 12.2648C8.54363 12.0578 8.25659 11.9432 7.95864 11.9458C7.66068 11.9484 7.37567 12.0679 7.16498 12.2786C6.95429 12.4893 6.83478 12.7743 6.83219 13.0723C6.8296 13.3702 6.94414 13.6573 7.15114 13.8716L10.5602 17.2807C10.6719 17.3923 10.8056 17.4794 10.9527 17.5364C11.0999 17.5935 11.2574 17.6193 11.4151 17.6121C11.5728 17.6049 11.7272 17.565 11.8686 17.4948C12.0101 17.4247 12.1353 17.3258 12.2364 17.2045L17.9182 10.3864Z" fill="#333"/></svg>';
 
+// 방금 쓴 모미에 그려지는 체크 (원 테두리 → 검정 채움 → 체크 한 획 → 톡 + 짧은 선 10개·물결)
+const RAYS = Array.from({ length: 10 }, (_, i) => {
+  const a = (i / 10) * Math.PI * 2 - Math.PI / 2, x = (r) => (42 + Math.cos(a) * r).toFixed(1), y = (r) => (42 + Math.sin(a) * r).toFixed(1);
+  return `<line class="ray" x1="${x(39)}" y1="${y(39)}" x2="${x(64)}" y2="${y(64)}"/>`;
+}).join('');
+const DONE = `<svg class="done" viewBox="0 0 84 84" aria-hidden="true">${RAYS}<circle class="wave" cx="42" cy="42" r="36"/>`
+  + '<circle class="fillc" cx="42" cy="42" r="36"/><circle class="ring" cx="42" cy="42" r="36"/>'
+  + '<g class="ck"><path class="chk" d="M29 43.5 L38.5 53 L56 33"/></g></svg>';
+
 // 큰 모미 (모양 + 안에 글·날짜)
 function bigHTML(it) {
   return `<svg viewBox="0 0 151 151" aria-hidden="true"><g fill="${col(it.color)}">${BIG_SVG[it.shape]}</g></svg>`
@@ -56,6 +65,7 @@ function day(iso) {
 let items = [];                 // 오래된 글 → 최신 글
 const seen = new Set();         // 이미 그린 글 (새 글만 톡 튀어나오게)
 let drawn = false;
+let justPosted = null;          // 방금 쓴 글 (체크 모션을 보여 줄 모미)
 
 // 내가 쓴 글 id (이 휴대폰에만 저장. 못 쓰는 환경이면 그냥 넘어감)
 const MINE_KEY = 'bucket-mine';
@@ -129,13 +139,13 @@ function render() {
     b.style.top = `calc(var(--u) * ${p.r * 71})`;
     b.setAttribute('aria-label', `${SHAPE_NAMES[p.it.shape]} 모미: ${p.it.text}`);
     b.innerHTML = `<svg viewBox="0 0 68 68" aria-hidden="true"><g fill="${col(p.it.color)}">${CELL_SVG[p.it.shape]}</g></svg>`
-      + (mine.includes(p.it.id) ? CHECK : '');
+      + (p.it.id === justPosted ? DONE : mine.includes(p.it.id) ? CHECK : '');
     if (drawn && !seen.has(p.it.id)) b.classList.add('pop');
     return b;
   }));
   placed.forEach((p) => seen.add(p.it.id));
   drawn = true;
-  $('count').textContent = `${items.length}명의 모미 보관중`;
+  $('count').textContent = `${items.length}개의 모미 보관중`;
   clampPan();
   place();
 }
@@ -296,6 +306,25 @@ text.addEventListener('keydown', (e) => {
 });
 
 let posted = false;
+
+// 체크 모션(약 1.5초) → 완료 알림(2.2초) → 알림이 사라지고 '모미 작성하기' 버튼이 다시 나옴
+function celebrate(id) {
+  world.querySelector(`[data-id="${id}"] .done`)?.classList.add('play');
+  const toast = $('toast');
+  setTimeout(() => {
+    toast.classList.remove('bye');
+    toast.hidden = false;
+    setTimeout(() => {
+      toast.classList.add('bye');
+      setTimeout(() => {
+        toast.hidden = true;
+        posted = false;
+        justPosted = null;   // 다음에 다시 그릴 땐 보통 체크 표시로
+        if (sheet.classList.contains('down')) $('open').classList.remove('away');
+      }, 350);
+    }, 2200);
+  }, 1500);
+}
 function openSheet() {
   $('card').hidden = true;
   sheet.inert = false;
@@ -341,14 +370,15 @@ sheet.addEventListener('submit', async (e) => {
       sendBtn.disabled = false;
       return;
     }
-    // 피그마 'iPhone 17 - 11': 시트가 내려가고, 판 가운데로 내 모미가 와서 체크 표시
+    // 피그마 11 → 10 → 9: 시트가 내려가고 판 가운데로 내 모미가 옴 → 체크가 그려짐 → '작성 완료' 알림 → 다시 판
     rememberMine(d.item.id);
+    justPosted = d.item.id;
     posted = true;
     items.push(d.item);
     text.value = '';
     closeSheet();
     render();
-    glideTo(d.item.id);
+    glideTo(d.item.id, () => celebrate(d.item.id));
   } catch {
     msg.textContent = '인터넷 연결을 확인해 주세요.';
     sendBtn.disabled = false;

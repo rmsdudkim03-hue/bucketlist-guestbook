@@ -264,6 +264,66 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .send:disabled { opacity: .3; cursor: default; }
 
+/* ---------- 방금 쓴 모미의 체크 모션 ----------
+   원 테두리가 그려짐 → 안이 검정으로 차오름 → 체크가 한 획으로 그어지며 톡 튐 → 둘레로 짧은 선과 물결이 터짐
+   (선 길이만큼 stroke-dasharray를 주고 stroke-dashoffset을 0으로 줄여서 '그려지는' 효과)
+   다 그려진 크기 = 피그마 체크 표시(지름 25) */
+.momi .done {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--u) * 28);
+  height: calc(var(--u) * 28);
+  transform: translate(-50%, -50%);
+  overflow: visible;
+}
+.done .ring { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 227; stroke-dashoffset: 227; transform: rotate(-90deg); transform-origin: 42px 42px; }
+.done .fillc { fill: var(--ink); transform: scale(0); transform-origin: 42px 42px; }
+.done .chk { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 50; stroke-dashoffset: 50; }
+.done .ck { transform-origin: 42px 44px; }
+.done .ray { stroke: var(--ink); stroke-width: 4.5; stroke-linecap: round; stroke-dasharray: 14 40; stroke-dashoffset: 14; opacity: 0; }
+.done .ray:nth-of-type(even) { stroke: #e2e868; }   /* 짝수 선은 밑줄과 같은 연두 */
+.done .wave { fill: none; stroke: var(--ink); stroke-width: 2; opacity: 0; transform-origin: 42px 42px; }
+.done.play .ring { animation: draw .6s cubic-bezier(.6, 0, .3, 1) forwards; }
+.done.play .fillc { animation: fillin .38s .5s cubic-bezier(.3, 1.5, .5, 1) forwards; }
+.done.play .chk { animation: draw .34s .74s cubic-bezier(.6, 0, .2, 1) forwards; }
+.done.play .ck { animation: tick .45s 1.02s cubic-bezier(.3, 1.8, .5, 1); }
+.done.play .ray { animation: burst .6s 1s cubic-bezier(.2, .7, .3, 1) forwards; }
+.done.play .wave { animation: wave .7s 1s cubic-bezier(.2, .7, .3, 1) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes fillin { to { transform: scale(1); } }
+@keyframes tick { 40% { transform: scale(1.22); } }
+@keyframes burst { 0% { opacity: 1; stroke-dashoffset: 14; } 70% { opacity: 1; } 100% { opacity: 0; stroke-dashoffset: -24; } }
+@keyframes wave { 0% { opacity: .6; transform: scale(1); } 100% { opacity: 0; transform: scale(1.75); } }
+
+/* ---------- 작성 완료 알림 (피그마 'iPhone 17 - 10') ----------
+   흰 알약 246×56, 그림자 (5, 5) 흐림 30 검정 10%. 체크 25 + 'Pretendard Bold 16' */
+.toast {
+  position: fixed;
+  left: 50%;
+  top: calc(50% + var(--u) * (433 - 437));
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 12);
+  width: calc(var(--u) * 246);
+  height: calc(var(--u) * 56);
+  padding-left: calc(var(--u) * 16);
+  border-radius: calc(var(--u) * 88);
+  background: #fff;
+  box-shadow: calc(var(--u) * 5) calc(var(--u) * 5) calc(var(--u) * 30) rgba(0, 0, 0, .1);
+  font: 700 calc(var(--u) * 16) / 1.2 var(--font);
+  color: var(--ink);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  animation: toastIn .4s cubic-bezier(.3, 1.4, .5, 1);
+  pointer-events: none;
+}
+.toast svg { width: calc(var(--u) * 25); height: calc(var(--u) * 25); flex: none; }
+.toast.bye { animation: toastOut .35s ease forwards; }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, calc(var(--u) * 12)) scale(.94); } }
+@keyframes toastOut { to { opacity: 0; transform: translate(-50%, calc(var(--u) * -8)); } }
+
 /* ---------- 모미 보기 (판에서 모미를 눌렀을 때) ---------- */
 .card {
   position: fixed;

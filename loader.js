@@ -143,8 +143,12 @@
   function close() {
     closing = true;
     el.classList.add('out');
-    window.dispatchEvent(new Event('loader:done')); // 안내 화면 시작 (intro.js)
-    setTimeout(() => el.remove(), 500);
+    // 로딩이 다 사라진 다음에 안내 화면 시작 (intro.js).
+    // 겹치면 안내 문구의 연두 밑줄이 사라지는 네모 밑에서 선처럼 보였음
+    setTimeout(() => {
+      el.remove();
+      window.dispatchEvent(new Event('loader:done'));
+    }, 500);
   }
 
   // app.js가 글을 다 불러오면 부름
