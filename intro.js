@@ -37,12 +37,9 @@
 
   el.addEventListener('click', (e) => { if (e.target !== go && step === 1) second(); });
   go.addEventListener('click', () => {
-    // 찰칵 튀고 나서 쓰기 화면 열기 (app.js)
-    window.snap(go, () => {
-      el.classList.add('out');
-      window.openSheet();
-      setTimeout(() => el.remove(), 500);
-    });
+    el.classList.add('out');
+    window.openSheet();   // 쓰기 화면 열기 (app.js)
+    setTimeout(() => el.remove(), 500);
   });
 
   if (location.hash === '#intro') {

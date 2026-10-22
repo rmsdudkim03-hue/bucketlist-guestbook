@@ -63,7 +63,22 @@ button, input, textarea { font: inherit; color: inherit; }
 .momi svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .momi.pop svg:first-child { animation: pop .6s cubic-bezier(.3, 1.6, .5, 1) both; }
 @keyframes pop { from { transform: scale(0); } }
-.momi:active svg:first-child { transform: scale(.92); }
+/* 모미 누름 모션: 마우스를 올리거나 누르고 있으면 살짝 떠오르며 모양을 따라 부드러운 그림자가 생김.
+   누르면 찰칵 튀어 올랐다 돌아온 뒤 글 카드가 열림 (app.js snap()) */
+.momi svg:first-child { transition: translate .2s ease, filter .2s ease; }
+@media (hover: hover) {
+  .momi:hover { z-index: 1; }
+  .momi:hover svg:first-child { translate: 0 calc(var(--u) * -3); filter: drop-shadow(calc(var(--u) * 3) calc(var(--u) * 6) calc(var(--u) * 6) rgba(0, 0, 0, .18)); }
+}
+.momi:active { z-index: 1; }
+.momi:active svg:first-child { translate: 0 calc(var(--u) * -3); filter: drop-shadow(calc(var(--u) * 3) calc(var(--u) * 6) calc(var(--u) * 6) rgba(0, 0, 0, .18)); }
+.momi.snap { z-index: 1; }
+.momi.snap svg:first-child { animation: momiSnap .45s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes momiSnap {
+  0% { translate: 0 0; scale: .94; filter: drop-shadow(calc(var(--u) * 1) calc(var(--u) * 2) calc(var(--u) * 3) rgba(0, 0, 0, .15)); }
+  40% { translate: 0 calc(var(--u) * -7); scale: 1.08; filter: drop-shadow(calc(var(--u) * 5) calc(var(--u) * 11) calc(var(--u) * 10) rgba(0, 0, 0, .22)); }
+  100% { translate: 0 0; scale: 1; filter: drop-shadow(0 0 0 transparent); }
+}
 
 /* 판 위에 떠 있는 로고·개수·버튼 (피그마 좌표) */
 .map-logo {
@@ -104,32 +119,9 @@ button, input, textarea { font: inherit; color: inherit; }
   color: #fff;
   font: 700 calc(var(--u) * 16) / 1.2 var(--font);
   cursor: pointer;
-  transition: opacity .3s, transform .3s, translate .2s ease, box-shadow .25s ease;
+  transition: opacity .3s, transform .3s;
 }
 .cta.away { opacity: 0; transform: translate(-50%, 20px); pointer-events: none; }
-
-/* ---------- 버튼 누름 모션 ----------
-   마우스를 올리거나 누르고 있으면 버튼이 살짝 떠오르고, 부드러운 그림자가 오른쪽 아래로 퍼짐
-   (피그마 완료 알림 그림자와 같은 결: 오른쪽 아래로 5, 흐림 30). 클릭하면 찰칵: 튀어 올라 그림자가 커졌다가 제자리로 (app.js snap()).
-   기존 위치 이동(transform)과 섞이지 않게 translate·scale을 따로 씀 */
-.cta, .send, .intro-btn { --shc: rgba(0, 0, 0, .22); }   /* 그림자 색 */
-@media (hover: hover) {
-  .cta:hover, .send:hover:not(:disabled), .intro-btn.show:hover {
-    translate: 0 calc(var(--u) * -3);
-    box-shadow: calc(var(--u) * 5) calc(var(--u) * 8) calc(var(--u) * 24) var(--shc);
-  }
-}
-.cta:active, .send:active:not(:disabled), .intro-btn.show:active {
-  translate: 0 calc(var(--u) * -3);
-  box-shadow: calc(var(--u) * 5) calc(var(--u) * 8) calc(var(--u) * 24) var(--shc);
-}
-.snap { animation: snap .45s cubic-bezier(.2, 1.4, .4, 1); }
-.send.snap:disabled { opacity: 1; }   /* 보내는 중에도 찰칵이 흐려지지 않게 */
-@keyframes snap {
-  0% { translate: 0 0; scale: .97; box-shadow: calc(var(--u) * 2) calc(var(--u) * 3) calc(var(--u) * 8) var(--shc); }
-  40% { translate: 0 calc(var(--u) * -6); scale: 1.04; box-shadow: calc(var(--u) * 6) calc(var(--u) * 12) calc(var(--u) * 30) var(--shc); }
-  100% { translate: 0 0; scale: 1; box-shadow: 0 0 0 transparent; }
-}
 
 /* ---------- 모미 쓰기 시트 (피그마 'iPhone 17 - 12', '- 8') ----------
    아래에서 올라오는 흰 판 (위 모서리 둥글게 50). 안의 좌표 = 피그마 y - 291 */
@@ -284,7 +276,7 @@ button, input, textarea { font: inherit; color: inherit; }
   color: #fff;
   font: 700 calc(var(--u) * 16) / 1.2 var(--font);
   cursor: pointer;
-  transition: opacity .2s, translate .2s ease, box-shadow .25s ease;
+  transition: opacity .2s;
 }
 .send:disabled { opacity: .3; cursor: default; }
 
@@ -497,6 +489,6 @@ body.admin { background: #fff; }
   opacity: 0;
   transform: translateY(calc(var(--u) * 12));
   pointer-events: none;
-  transition: opacity .5s ease, transform .5s ease, translate .2s ease, box-shadow .25s ease;
+  transition: opacity .5s ease, transform .5s ease;
 }
 .intro-btn.show { opacity: 1; transform: none; pointer-events: auto; }

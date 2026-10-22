@@ -247,13 +247,16 @@ world.addEventListener('click', (e) => {
   if (!b || moved) return;
   const it = items.find((x) => x.id === b.dataset.id);
   if (!it) return;
+  snap(b, () => showCard(it));   // 찰칵 튀고 나서 글 카드
+});
+function showCard(it) {
   $('cardWho').textContent = it.name || '익명';
   const big = $('cardBig');
   big.className = `big ${it.shape}`;
   big.innerHTML = bigHTML(it);
   $('card').hidden = false;
   fitTri(big);
-});
+}
 $('card').addEventListener('click', () => { $('card').hidden = true; });
 
 /* ---------- 불러오기 ---------- */
@@ -357,7 +360,7 @@ function closeSheet() {
   $('sheetDim').hidden = true;
   if (!posted) $('open').classList.remove('away');
 }
-// 버튼 찰칵 모션 (style.css .snap). 튀는 게 보이도록 다음 동작은 0.3초 뒤에
+// 모미 찰칵 모션 (style.css .momi.snap). 튀는 게 보이도록 다음 동작은 0.3초 뒤에
 function snap(btn, then) {
   btn.classList.remove('snap');
   void btn.offsetWidth;          // 다시 재생되게
@@ -365,9 +368,8 @@ function snap(btn, then) {
   btn.addEventListener('animationend', () => btn.classList.remove('snap'), { once: true });
   if (then) setTimeout(then, 300);
 }
-window.snap = snap;
 window.openSheet = openSheet;   // 안내 화면 버튼(intro.js)에서 씀
-$('open').onclick = () => snap($('open'), openSheet);
+$('open').onclick = openSheet;
 $('close').onclick = closeSheet;
 $('sheetDim').onclick = closeSheet;
 
@@ -382,7 +384,6 @@ const ERRORS = {
 sheet.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (sendBtn.disabled) return;
-  snap(sendBtn);
   sendBtn.disabled = true;
   msg.textContent = '';
   try {
